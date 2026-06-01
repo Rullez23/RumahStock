@@ -662,18 +662,23 @@ function doLogout(){
 
 function applyRoleUI(){
   const admin = isAdmin();
-  // Admin-only elements
+
+  // Admin-only ACTION elements (add/edit/delete/print buttons)
   document.querySelectorAll('.admin-only').forEach(el => {
     el.style.display = admin ? '' : 'none';
   });
-  // Nav tabs — operators only see Scan
-  document.getElementById('nav-bins').style.display      = admin ? '' : 'none';
-  document.getElementById('nav-history').style.display   = admin ? '' : 'none';
-  document.getElementById('nav-dashboard').style.display = admin ? '' : 'none';
-  // Items table — hide edit/delete col for operators
+
+  // Nav tabs — operators see everything EXCEPT dashboard is read-only
+  // All tabs visible to both roles
+  document.getElementById('nav-bins').style.display      = '';
+  document.getElementById('nav-history').style.display   = '';
+  document.getElementById('nav-dashboard').style.display = '';
+
+  // Items table action col (edit/delete buttons per row)
   const ac = document.getElementById('items-action-col');
   if(ac) ac.style.display = admin ? '' : 'none';
-  // Role badge in nav (update logo area)
+
+  // Role badge
   const badge = `<span class="role-badge ${currentUser.role}">${currentUser.role}</span>`;
   document.querySelector('.logo').innerHTML = `Rumah<span>Stock</span> ${badge}`;
 }
@@ -711,7 +716,7 @@ function initFirebase(){
     dbRef.on('value', snap => {
       const data = snap.val();
       if(data && data.bins){
-        state = data;
+        state = normalizeState(data);
         if(!state.history) state.history = [];
         // Refresh current view
         const activePage = document.querySelector('.page.active');
@@ -1161,13 +1166,14 @@ function confirmDeleteBin(){
 ═══════════════════════════════════════════════════ */
 let activeFilter='all';
 function renderBins(filter='',catFilter=activeFilter){
-  const cats=[...new Set(state.bins.map(b=>b.cat))];
+  const bins = ensureArray(state.bins);
+  const cats=[...new Set(bins.map(b=>b.cat))];
   document.getElementById('cat-pills').innerHTML=
     `<span class="pill ${catFilter==='all'?'active':''}" onclick="setCat('all')">Semua</span>`+
     cats.map(c=>`<span class="pill ${catFilter===c?'active':''}" onclick="setCat('${c.replace(/'/g,"\\'")}')">
       ${c.replace('Perlengkapan ','').replace('Persediaan Stock ','')}</span>`).join('');
   const fl=filter.toLowerCase();
-  const list=state.bins.filter(b=>{
+  const list=bins.filter(b=>{
     const catOk=catFilter==='all'||b.cat===catFilter;
     const srchOk=!fl||b.id.toLowerCase().includes(fl)||b.cat.toLowerCase().includes(fl)||
                   b.items.some(it=>it.name.toLowerCase().includes(fl));
@@ -1242,13 +1248,17 @@ function renderHistory(){
 let currentDrilldown=null,txPeriod='today';
 
 function renderDashboard(){
-  closeDrilldown();
-  const all=state.bins.flatMap(b=>b.items);
-  const today=new Date();
-  const txToday=(state.history||[]).filter(h=>isSameDay(new Date(h.ts),today));
+  // Don't call closeDrilldown here — it hides elements renderDashboard needs
+  // Only reset if we're freshly loading the page, not on Firebase sync
+  const bins = ensureArray(state.bins);
+  const hist = ensureArray(state.history);
+  const all  = bins.flatMap(b => ensureArray(b.items));
+  const today = new Date();
+  const txToday = hist.filter(h => isSameDay(new Date(h.ts), today));
+
   document.getElementById('stats-grid').innerHTML=`
     <div class="stat-card green" onclick="openDrilldown('bins')">
-      <div class="stat-num">${state.bins.length}</div><div class="stat-label">Total Bins</div>
+      <div class="stat-num">${bins.length}</div><div class="stat-label">Total Bins</div>
       <div style="font-size:11px;color:var(--teal);margin-top:6px;font-weight:600;">Lihat semua →</div>
     </div>
     <div class="stat-card" onclick="openDrilldown('items')">
@@ -1263,12 +1273,13 @@ function renderDashboard(){
       <div class="stat-num">${txToday.length}</div><div class="stat-label">Transaksi Hari Ini</div>
       <div style="font-size:11px;color:#B45309;margin-top:6px;font-weight:600;">Lihat detail →</div>
     </div>`;
-  const trendCard=document.getElementById('dash-trend-card');
-  if(trendCard)renderTrendCard();
+
+  renderTrendCard();
+
   const icons={out:'📤',in:'📥',opname:'🔢'};
-  const recent=(state.history||[]).slice(0,8);
-  document.getElementById('dash-activity').innerHTML=recent.length
-    ?recent.map(h=>{
+  const recent = hist.slice(0,8);
+  document.getElementById('dash-activity').innerHTML = recent.length
+    ? recent.map(h=>{
         const d=new Date(h.ts);
         const ts=d.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
         return `<div class="history-item">
@@ -1279,10 +1290,34 @@ function renderDashboard(){
           </div>
           <div class="hist-qty ${h.type}">${h.type==='out'?'-':h.type==='in'?'+':''}${h.qty} ${h.unit}</div>
         </div>`;}).join('')
-    :'<div class="empty">Belum ada aktivitas.</div>';
+    : '<div class="empty">Belum ada aktivitas.</div>';
+
+  // If drilldown is open, refresh it too
+  if(currentDrilldown){
+    if(currentDrilldown==='tx') applyTxFilter();
+    else renderDrilldownContent(currentDrilldown);
+  }
 }
 
 function isSameDay(a,b){return a.getDate()===b.getDate()&&a.getMonth()===b.getMonth()&&a.getFullYear()===b.getFullYear();}
+
+// Firebase stores arrays as objects with numeric keys — this converts them back
+function ensureArray(val){
+  if(!val) return [];
+  if(Array.isArray(val)) return val;
+  // Firebase object with numeric keys → array
+  return Object.keys(val).sort((a,b)=>Number(a)-Number(b)).map(k=>val[k]);
+}
+
+function normalizeState(data){
+  // Ensure bins is a proper array and each bin's items is a proper array
+  data.bins = ensureArray(data.bins).map(b=>({
+    ...b,
+    items: ensureArray(b.items)
+  }));
+  data.history = ensureArray(data.history);
+  return data;
+}
 
 function openDrilldown(type){
   currentDrilldown=type;
@@ -1310,8 +1345,9 @@ function closeDrilldown(){
 
 function renderDrilldownContent(type){
   const el=document.getElementById('dd-content');
+  const bins = ensureArray(state.bins);
   if(type==='bins'){
-    el.innerHTML=state.bins.map(bin=>`
+    el.innerHTML=bins.map(bin=>`
       <div onclick="drillGoToBin('${bin.id}')"
         style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #eee;cursor:pointer;">
         <div style="background:var(--dark);color:#fff;border-radius:8px;padding:6px 10px;text-align:center;min-width:52px;">
@@ -1327,7 +1363,7 @@ function renderDrilldownContent(type){
       </div>`).join('')||'<div class="empty">Tidak ada bin.</div>';
   }else if(type==='items'){
     const map={};
-    state.bins.forEach(bin=>bin.items.forEach(it=>{
+    bins.forEach(bin=>ensureArray(bin.items).forEach(it=>{
       const k=it.name.toLowerCase().trim();
       if(!map[k])map[k]={name:it.name,total:0,bins:[]};
       map[k].total+=it.qty;
@@ -1358,7 +1394,7 @@ function renderDrilldownContent(type){
     }).join('')||'<div class="empty">Tidak ada barang.</div>';
   }else if(type==='zero'){
     const zeroList=[];
-    state.bins.forEach(bin=>bin.items.forEach(it=>{if(it.qty===0)zeroList.push({...it,binId:bin.id,cat:bin.cat,rak:bin.rak,kotak:bin.kotak});}));
+    bins.forEach(bin=>ensureArray(bin.items).forEach(it=>{if(it.qty===0)zeroList.push({...it,binId:bin.id,cat:bin.cat,rak:bin.rak,kotak:bin.kotak});}));
     el.innerHTML=zeroList.length
       ?zeroList.map(it=>`
         <div onclick="drillGoToBin('${it.binId}')"
@@ -1403,7 +1439,7 @@ function setTxPeriod(period,el){
 
 function applyTxFilter(){
   const now=new Date();
-  const hist=state.history||[];
+  const hist=ensureArray(state.history);
   let filtered;
   if(txPeriod==='today'){filtered=hist.filter(h=>isSameDay(new Date(h.ts),now));}
   else if(txPeriod==='week'){const s=new Date(now);s.setDate(now.getDate()-now.getDay());s.setHours(0,0,0,0);filtered=hist.filter(h=>new Date(h.ts)>=s);}
@@ -1463,7 +1499,7 @@ function renderTrendCard(){
   if(!el)return;
   const now=new Date(),from=new Date(now);
   from.setDate(now.getDate()-trendDays+1);from.setHours(0,0,0,0);
-  const txs=(state.history||[]).filter(h=>h.type==='out'&&new Date(h.ts)>=from);
+  const txs=ensureArray(state.history).filter(h=>h.type==='out'&&new Date(h.ts)>=from);
   if(!txs.length){el.innerHTML='<div class="empty" style="padding:20px;">Belum ada data konsumsi.<br><small>Data muncul setelah ada transaksi AMBIL.</small></div>';return;}
   if(trendMode==='daily')renderDailyChart(el,txs,from,now);
   else if(trendMode==='item')renderTopItemsChart(el,txs);

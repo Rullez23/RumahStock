@@ -4,9 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
 <title>RumahStock</title>
-<!-- Firebase SDK -->
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<!-- Firebase loaded dynamically in JS to prevent blocking app on load -->
 <style>
 :root{
   --dark:#1B2A3B;--mid:#2E4057;--teal:#048A81;--gold:#E8B84B;
@@ -830,50 +828,71 @@ function applyRoleUI(){
 ═══════════════════════════════════════════════════ */
 function initFirebase(){
   setSyncStatus('syncing');
-  try{
-    // Init only once
-    if(!firebase.apps.length){
-      firebase.initializeApp(FIREBASE_CONFIG);
-    }
-    db    = firebase.database();
-    dbRef = db.ref('rumahstock');
 
-    // Listen for real-time updates
-    dbRef.on('value', snap => {
-      const data = snap.val();
-      if(data && data.bins){
-        state = normalizeState(data);
-        if(!state.history) state.history = [];
-        // Refresh current view
-        const activePage = document.querySelector('.page.active');
-        if(activePage){
-          const pid = activePage.id.replace('page-','');
-          if(pid==='bins') renderBins();
-          if(pid==='history') renderHistory();
-          if(pid==='dashboard') renderDashboard();
-          if(pid==='scan' && currentBin){
-            const refreshed = state.bins.find(b=>b.id===currentBin.id);
-            if(refreshed){ currentBin=refreshed; renderItemsTable(refreshed); }
-          }
-        }
-        setSyncStatus('online');
-      } else {
-        // First time — push initial data
-        dbRef.set(state).then(()=>setSyncStatus('online')).catch(()=>setSyncStatus('offline'));
-      }
-    }, err => {
-      setSyncStatus('offline');
-      showToast('⚠️ Tidak bisa tersambung ke database');
+  // Load Firebase SDK dynamically — if it fails, app still works offline
+  function loadScript(src){
+    return new Promise((res, rej)=>{
+      const s = document.createElement('script');
+      s.src = src; s.onload = res; s.onerror = rej;
+      document.head.appendChild(s);
     });
-
-    db.ref('.info/connected').on('value', snap => {
-      setSyncStatus(snap.val() ? 'online' : 'offline');
-    });
-
-  }catch(e){
-    setSyncStatus('offline');
-    showToast('⚠️ Firebase belum dikonfigurasi — gunakan mode offline');
   }
+
+  Promise.all([
+    loadScript('https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js'),
+    loadScript('https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js')
+  ]).then(()=>{
+    try{
+      if(!firebase.apps.length){
+        firebase.initializeApp(FIREBASE_CONFIG);
+      }
+      db    = firebase.database();
+      dbRef = db.ref('rumahstock');
+
+      dbRef.on('value', snap => {
+        const data = snap.val();
+        if(data && data.bins){
+          state = normalizeState(data);
+          if(!state.history) state.history = [];
+          const activePage = document.querySelector('.page.active');
+          if(activePage){
+            const pid = activePage.id.replace('page-','');
+            if(pid==='bins') renderBins();
+            if(pid==='history') renderHistory();
+            if(pid==='dashboard') renderDashboard();
+            if(pid==='reports') renderReportsPage();
+            if(pid==='scan' && currentBin){
+              const refreshed = state.bins.find(b=>b.id===currentBin.id);
+              if(refreshed){ currentBin=refreshed; renderItemsTable(refreshed); }
+            }
+          }
+          setSyncStatus('online');
+        } else {
+          dbRef.set(state).then(()=>setSyncStatus('online')).catch(()=>setSyncStatus('offline'));
+        }
+      }, err => {
+        setSyncStatus('offline');
+        showToast('⚠️ Tidak bisa tersambung ke database — mode offline');
+      });
+
+      db.ref('.info/connected').on('value', snap => {
+        setSyncStatus(snap.val() ? 'online' : 'offline');
+      });
+
+    }catch(e){
+      setSyncStatus('offline');
+      showToast('⚠️ Firebase error — mode offline aktif');
+    }
+  }).catch(()=>{
+    // Firebase SDK failed to load (no internet / sandbox) — run fully offline
+    setSyncStatus('offline');
+    showToast('📴 Mode offline — data tersimpan lokal');
+    // Load from localStorage fallback
+    try{
+      const s = localStorage.getItem('rs_offline');
+      if(s){ state = normalizeState(JSON.parse(s)); }
+    }catch(e){}
+  });
 }
 
 function saveState(){

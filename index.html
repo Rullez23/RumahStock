@@ -2589,32 +2589,6 @@ function renderInvByBin(fromD, toD, catFilter, binFilter, periodLabel){
 }
 
 
-  const content = document.getElementById('inv-report-content');
-  if(!content||!content.innerHTML.trim()){showToast('Generate report dulu');return;}
-  const now = new Date().toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'});
-  const w=window.open('','_blank','width=750,height=950');
-  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"/>
-  <title>Inventory Report</title>
-  <style>
-    body{margin:12mm;font-family:'Segoe UI',Arial,sans-serif;font-size:12px;color:#1B2A3B;}
-    @media print{@page{margin:10mm;size:A4 portrait;}}
-    div[id^="inv-d-"]{display:none!important;}
-  </style></head><body>
-  <div style="border-bottom:3px solid #1B2A3B;padding-bottom:10px;margin-bottom:14px;
-              display:flex;justify-content:space-between;align-items:flex-end;">
-    <div>
-      <div style="font-size:10px;color:#888;font-weight:700;letter-spacing:1px;text-transform:uppercase;">INVENTORY REPORT</div>
-      <div style="font-size:18px;font-weight:900;">RumahStock</div>
-    </div>
-    <div style="text-align:right;font-size:11px;color:#888;">Dicetak: ${now}</div>
-  </div>
-  ${content.innerHTML}
-  <scr`+`ipt>window.onload=function(){window.print();}<\/scr`+`ipt>
-  </body></html>`);
-  w.document.close();
-}
-
-
 function printInvReport(){
   const content = document.getElementById('inv-report-content');
   if(!content||!content.innerHTML.trim()){showToast('Generate report dulu');return;}

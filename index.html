@@ -2,8 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
 <title>RumahStock</title>
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <style>
 :root{
   --dark:#1B2A3B;--mid:#2E4057;--teal:#048A81;--gold:#E8B84B;
@@ -13,24 +16,69 @@
 *{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',sans-serif;-webkit-tap-highlight-color:transparent;}
 body{background:#f0f4f7;color:var(--text);min-height:100vh;overscroll-behavior:none;}
 
-/* NAV */
+/* ── LOGIN SCREEN ───────────────────────────── */
+#login-screen{
+  display:flex;position:fixed;inset:0;z-index:900;
+  background:linear-gradient(135deg,var(--dark) 0%,var(--mid) 100%);
+  flex-direction:column;align-items:center;justify-content:center;padding:24px;
+}
+#login-screen .brand{text-align:center;margin-bottom:36px;}
+#login-screen .brand .logo{font-size:32px;font-weight:900;color:#fff;letter-spacing:1px;}
+#login-screen .brand .logo span{color:var(--gold);}
+#login-screen .brand p{color:rgba(255,255,255,.5);font-size:13px;margin-top:6px;}
+.login-card{background:#fff;border-radius:20px;padding:28px;width:100%;max-width:360px;
+    box-shadow:0 20px 60px rgba(0,0,0,.4);}
+.login-card h2{font-size:16px;font-weight:700;color:var(--dark);margin-bottom:20px;text-align:center;}
+.login-field{margin-bottom:14px;}
+.login-field label{font-size:11px;font-weight:700;color:var(--mid);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px;}
+.login-field input{width:100%;padding:12px 14px;border:1.5px solid #e5e7eb;border-radius:10px;
+    font-size:15px;outline:none;transition:border .2s;background:#f9fafb;}
+.login-field input:focus{border-color:var(--teal);background:#fff;}
+.login-btn{width:100%;padding:14px;background:var(--teal);color:#fff;border:none;border-radius:10px;
+    font-size:15px;font-weight:700;cursor:pointer;margin-top:4px;transition:filter .2s;}
+.login-btn:hover{filter:brightness(1.08);}
+.login-error{color:var(--red);font-size:12px;text-align:center;margin-top:10px;min-height:18px;}
+.login-info{font-size:11px;color:#888;text-align:center;margin-top:16px;line-height:1.6;}
+
+/* ── ROLE BADGE ─────────────────────────────── */
+.role-badge{
+  padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;
+  letter-spacing:.5px;text-transform:uppercase;
+}
+.role-badge.admin{background:var(--gold);color:var(--dark);}
+.role-badge.operator{background:#EEF2FF;color:#3730A3;}
+
+/* ── SYNC STATUS ────────────────────────────── */
+#sync-status{
+  font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px;
+  transition:all .3s;
+}
+#sync-status.online{background:#D1FAE5;color:#065F46;}
+#sync-status.offline{background:#FEE2E2;color:var(--red);}
+#sync-status.syncing{background:#FFF7E6;color:#B45309;}
+
+/* ── NAV ────────────────────────────────────── */
 nav{background:var(--dark);color:#fff;display:flex;align-items:center;
-    justify-content:space-between;padding:0 12px;height:54px;
+    justify-content:space-between;padding:0 10px;height:54px;
     position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.3);}
-.logo{font-size:19px;font-weight:800;letter-spacing:.5px;}
+.logo{font-size:17px;font-weight:800;letter-spacing:.5px;}
 .logo span{color:var(--gold);}
+.nav-right{display:flex;align-items:center;gap:8px;}
 .nav-tabs{display:flex;gap:2px;}
 .nav-tabs button{background:none;border:none;color:rgba(255,255,255,.6);
-    padding:6px 10px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;
-    transition:all .2s;display:flex;flex-direction:column;align-items:center;gap:1px;}
-.nav-tabs button .nav-icon{font-size:16px;}
+    padding:5px 8px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:600;
+    display:flex;flex-direction:column;align-items:center;gap:1px;}
+.nav-tabs button .nav-icon{font-size:15px;}
 .nav-tabs button.active,.nav-tabs button:hover{background:var(--teal);color:#fff;}
+.nav-tabs button.hidden{display:none;}
+#logout-btn{background:none;border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.7);
+    padding:4px 8px;border-radius:6px;font-size:11px;cursor:pointer;}
 
-/* PAGES */
+/* ── PAGES ──────────────────────────────────── */
 .page{display:none;padding:14px;max-width:900px;margin:0 auto;}
 .page.active{display:block;}
 
-/* CAMERA MODAL */
+/* ── CAMERA MODAL ───────────────────────────── */
 #scanner-modal{display:none;position:fixed;inset:0;z-index:300;background:#000;
     flex-direction:column;align-items:center;justify-content:center;}
 #scanner-modal.open{display:flex;}
@@ -48,31 +96,27 @@ nav{background:var(--dark);color:#fff;display:flex;align-items:center;
 .cam-frame::after{top:-2px;right:-2px;border-width:3px 3px 0 0;}
 .cam-corner-br{bottom:-2px;right:-2px;border-width:0 3px 3px 0;}
 .cam-corner-bl{bottom:-2px;left:-2px;border-width:0 0 3px 3px;}
-@keyframes laser{0%{top:8px;opacity:1}50%{opacity:.6}100%{top:calc(100% - 8px);opacity:1}}
+@keyframes laser{0%{top:8px}100%{top:calc(100% - 8px)}}
 .cam-laser{position:absolute;left:8px;right:8px;height:2px;
     background:linear-gradient(90deg,transparent,var(--gold),var(--teal),var(--gold),transparent);
-    border-radius:2px;box-shadow:0 0 8px var(--gold);animation:laser 2s ease-in-out infinite;}
+    border-radius:2px;box-shadow:0 0 8px var(--gold);animation:laser 2s ease-in-out infinite alternate;}
 @keyframes flash{0%{opacity:0}30%{opacity:.7}100%{opacity:0}}
-.cam-flash{position:absolute;inset:0;background:rgba(4,138,129,.35);
-    pointer-events:none;opacity:0;border-radius:16px;}
+.cam-flash{position:absolute;inset:0;background:rgba(4,138,129,.35);pointer-events:none;opacity:0;border-radius:16px;}
 .cam-flash.go{animation:flash .5s ease forwards;}
-.cam-hint{position:absolute;bottom:26%;left:0;right:0;
-    text-align:center;color:rgba(255,255,255,.85);font-size:14px;font-weight:600;
-    text-shadow:0 1px 4px rgba(0,0,0,.8);}
+.cam-hint{position:absolute;bottom:26%;left:0;right:0;text-align:center;
+    color:rgba(255,255,255,.85);font-size:14px;font-weight:600;text-shadow:0 1px 4px rgba(0,0,0,.8);}
 .cam-hint small{display:block;font-size:11px;color:rgba(255,255,255,.5);margin-top:4px;font-weight:400;}
-.cam-btns{position:absolute;bottom:40px;left:0;right:0;
-    display:flex;justify-content:center;gap:16px;}
-.cam-btn{background:rgba(255,255,255,.15);backdrop-filter:blur(6px);
-    border:1.5px solid rgba(255,255,255,.3);color:#fff;
-    padding:12px 28px;border-radius:50px;font-size:14px;font-weight:700;cursor:pointer;}
+.cam-btns{position:absolute;bottom:40px;left:0;right:0;display:flex;justify-content:center;gap:16px;}
+.cam-btn{background:rgba(255,255,255,.15);backdrop-filter:blur(6px);border:1.5px solid rgba(255,255,255,.3);
+    color:#fff;padding:12px 28px;border-radius:50px;font-size:14px;font-weight:700;cursor:pointer;}
 .cam-btn.torch-on{background:var(--gold);color:var(--dark);border-color:var(--gold);}
 .cam-result-pill{position:absolute;top:18%;left:50%;transform:translateX(-50%);
     background:var(--teal);color:#fff;padding:10px 20px;border-radius:50px;
-    font-size:14px;font-weight:700;white-space:nowrap;
-    box-shadow:0 4px 20px rgba(0,0,0,.4);opacity:0;transition:opacity .3s;pointer-events:none;}
+    font-size:14px;font-weight:700;white-space:nowrap;box-shadow:0 4px 20px rgba(0,0,0,.4);
+    opacity:0;transition:opacity .3s;pointer-events:none;}
 .cam-result-pill.show{opacity:1;}
 
-/* SCAN PAGE */
+/* ── SCAN PAGE ──────────────────────────────── */
 .scan-hero{background:linear-gradient(135deg,var(--dark) 0%,var(--mid) 100%);
     border-radius:16px;padding:20px;margin-bottom:14px;box-shadow:0 4px 20px rgba(0,0,0,.2);}
 .scan-hero h2{color:#fff;font-size:17px;margin-bottom:4px;}
@@ -83,27 +127,23 @@ nav{background:var(--dark);color:#fff;display:flex;align-items:center;
     display:flex;flex-direction:column;align-items:center;gap:6px;
     box-shadow:0 3px 12px rgba(4,138,129,.4);}
 .scan-cam-btn .big-icon{font-size:32px;}
-.scan-manual-btn{background:rgba(255,255,255,.1);color:#fff;
-    border:1.5px solid rgba(255,255,255,.2);border-radius:12px;
-    padding:16px 10px;font-size:14px;font-weight:700;cursor:pointer;
+.scan-manual-btn{background:rgba(255,255,255,.1);color:#fff;border:1.5px solid rgba(255,255,255,.2);
+    border-radius:12px;padding:16px 10px;font-size:14px;font-weight:700;cursor:pointer;
     display:flex;flex-direction:column;align-items:center;gap:6px;}
 .scan-manual-btn .big-icon{font-size:32px;}
 .manual-input-wrap{position:relative;}
-.manual-input-wrap input{width:100%;padding:13px 44px 13px 14px;font-size:15px;
-    border-radius:10px;border:2px solid rgba(255,255,255,.2);
-    background:rgba(255,255,255,.1);color:#fff;outline:none;font-weight:700;
-    letter-spacing:1px;}
+.manual-input-wrap input{width:100%;padding:13px 44px 13px 14px;font-size:15px;border-radius:10px;
+    border:2px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);color:#fff;outline:none;
+    font-weight:700;letter-spacing:1px;}
 .manual-input-wrap input::placeholder{color:rgba(255,255,255,.4);font-weight:400;letter-spacing:0;}
 .manual-input-wrap input:focus{border-color:var(--gold);}
 .manual-input-wrap .go-btn{position:absolute;right:10px;top:50%;transform:translateY(-50%);
     background:var(--teal);border:none;color:#fff;width:30px;height:30px;
-    border-radius:8px;font-size:16px;cursor:pointer;
-    display:flex;align-items:center;justify-content:center;}
+    border-radius:8px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
 
-/* BIN PANEL */
+/* ── BIN PANEL ──────────────────────────────── */
 #bin-panel{display:none;}
-.bin-header{background:var(--dark);border-radius:12px 12px 0 0;
-    display:flex;align-items:stretch;overflow:hidden;}
+.bin-header{background:var(--dark);border-radius:12px 12px 0 0;display:flex;align-items:stretch;overflow:hidden;}
 .bin-header .cat{flex:1;padding:14px 16px;color:#fff;}
 .bin-header .cat h3{font-size:15px;font-weight:700;}
 .bin-header .cat p{font-size:11px;color:var(--gray);margin-top:2px;}
@@ -121,6 +161,8 @@ nav{background:var(--dark);color:#fff;display:flex;align-items:center;
 .btn-out{background:#FEE2E2;color:var(--red);}
 .btn-in{background:#D1FAE5;color:#065F46;}
 .btn-opname{background:#EEF2FF;color:#3730A3;}
+
+/* ── ITEMS TABLE ────────────────────────────── */
 .items-table{width:100%;border-collapse:collapse;font-size:13px;}
 .items-table th{background:var(--teal);color:#fff;padding:8px 10px;text-align:left;font-weight:700;}
 .items-table th:nth-child(3),.items-table th:nth-child(4){text-align:center;width:58px;}
@@ -132,20 +174,19 @@ nav{background:var(--dark);color:#fff;display:flex;align-items:center;
 .qty-badge.low{background:var(--red);}
 .qty-badge.zero{background:#999;}
 
-/* CARDS */
+/* ── CARDS ──────────────────────────────────── */
 .card{background:#fff;border-radius:12px;padding:16px;
     box-shadow:0 2px 8px rgba(0,0,0,.07);margin-bottom:14px;}
 .card-title{font-size:15px;font-weight:700;color:var(--dark);
     margin-bottom:12px;display:flex;align-items:center;gap:8px;}
 
-/* MODAL - slides up from bottom */
+/* ── MODAL ──────────────────────────────────── */
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);
     z-index:200;align-items:flex-end;justify-content:center;}
 .modal-overlay.open{display:flex;}
 #confirm-overlay.open{display:flex;}
 .modal{background:#fff;border-radius:20px 20px 0 0;width:100%;max-width:500px;
-    overflow:hidden;box-shadow:0 -8px 40px rgba(0,0,0,.25);
-    max-height:90vh;overflow-y:auto;}
+    overflow:hidden;box-shadow:0 -8px 40px rgba(0,0,0,.25);max-height:90vh;overflow-y:auto;}
 .modal-head{padding:16px 20px;font-size:16px;font-weight:700;color:#fff;}
 .modal-head.out{background:var(--red);}
 .modal-head.in{background:var(--green);}
@@ -166,16 +207,14 @@ nav{background:var(--dark);color:#fff;display:flex;align-items:center;
     font-size:24px;font-weight:800;color:var(--dark);text-align:center;}
 .modal-body .cur-qty span{font-size:12px;color:#888;font-weight:400;display:block;}
 .modal-footer{display:flex;gap:8px;padding:0 20px 28px;}
-.modal-footer button{flex:1;padding:14px;border:none;border-radius:10px;
-    font-size:15px;font-weight:700;cursor:pointer;}
+.modal-footer button{flex:1;padding:14px;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;}
 .btn-cancel{background:#f0f0f0;color:#555;}
 .btn-confirm-out{background:var(--red);color:#fff;}
 .btn-confirm-in{background:var(--green);color:#fff;}
 .btn-confirm-opname{background:#3730A3;color:#fff;}
 
-/* HISTORY */
-.history-item{display:flex;align-items:center;gap:12px;
-    padding:10px 0;border-bottom:1px solid #eee;}
+/* ── HISTORY ────────────────────────────────── */
+.history-item{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #eee;}
 .history-item:last-child{border-bottom:none;}
 .hist-icon{width:36px;height:36px;border-radius:50%;flex-shrink:0;
     display:flex;align-items:center;justify-content:center;font-size:16px;}
@@ -190,17 +229,17 @@ nav{background:var(--dark);color:#fff;display:flex;align-items:center;
 .hist-qty.in{color:var(--green);}
 .hist-qty.opname{color:#3730A3;}
 
-/* DASHBOARD */
+/* ── DASHBOARD ──────────────────────────────── */
 .stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;}
 .stat-card{background:#fff;border-radius:12px;padding:16px;
-    box-shadow:0 2px 8px rgba(0,0,0,.07);text-align:center;border-top:4px solid var(--teal);}
+    box-shadow:0 2px 8px rgba(0,0,0,.07);text-align:center;border-top:4px solid var(--teal);cursor:pointer;}
 .stat-card.red{border-color:var(--red);}
 .stat-card.gold{border-color:var(--gold);}
 .stat-card.green{border-color:var(--green);}
 .stat-num{font-size:32px;font-weight:800;color:var(--dark);line-height:1;}
 .stat-label{font-size:12px;color:#888;margin-top:4px;}
 
-/* BINS */
+/* ── BINS ───────────────────────────────────── */
 .search-bar{width:100%;padding:10px 14px;border:1.5px solid #ddd;
     border-radius:10px;font-size:14px;outline:none;margin-bottom:10px;}
 .search-bar:focus{border-color:var(--teal);}
@@ -209,19 +248,17 @@ nav{background:var(--dark);color:#fff;display:flex;align-items:center;
     border:1.5px solid #ddd;background:#fff;cursor:pointer;}
 .pill.active{background:var(--teal);color:#fff;border-color:var(--teal);}
 
-/* OPNAME */
-.opname-row{display:flex;align-items:center;gap:10px;
-    padding:8px 0;border-bottom:1px solid #eee;}
+/* ── OPNAME ─────────────────────────────────── */
+.opname-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #eee;}
 .opname-row:last-child{border-bottom:none;}
 .opname-name{flex:1;font-size:13px;}
 .opname-sys{font-size:13px;color:#888;width:38px;text-align:center;}
-.opname-input{width:68px;padding:6px 8px;border:1.5px solid #ddd;
-    border-radius:6px;font-size:14px;text-align:center;}
+.opname-input{width:68px;padding:6px 8px;border:1.5px solid #ddd;border-radius:6px;font-size:14px;text-align:center;}
 .opname-diff{width:46px;text-align:center;font-weight:700;font-size:13px;}
 .opname-diff.pos{color:var(--green);}
 .opname-diff.neg{color:var(--red);}
 
-/* MISC */
+/* ── MISC ───────────────────────────────────── */
 .empty{text-align:center;color:#aaa;padding:32px;font-size:13px;}
 #no-bin{display:none;}
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
@@ -229,39 +266,74 @@ nav{background:var(--dark);color:#fff;display:flex;align-items:center;
     font-size:14px;font-weight:600;box-shadow:0 4px 20px rgba(0,0,0,.3);
     z-index:500;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;}
 .toast.show{opacity:1;}
+.admin-only{} /* shown to admin only — toggled by JS */
 </style>
 </head>
 <body>
 
+<!-- ══ LOGIN SCREEN ══════════════════════════════ -->
+<div id="login-screen">
+  <div class="brand">
+    <div class="logo">Rumah<span>Stock</span></div>
+    <p>Home Inventory Management</p>
+  </div>
+  <div class="login-card">
+    <h2>🔐 Masuk ke RumahStock</h2>
+    <div class="login-field">
+      <label>Username</label>
+      <input type="text" id="login-user" placeholder="admin / operator"
+             autocomplete="username" autocapitalize="none"/>
+    </div>
+    <div class="login-field">
+      <label>Password</label>
+      <input type="password" id="login-pass" placeholder="••••••••"
+             autocomplete="current-password"
+             onkeydown="if(event.key==='Enter')doLogin()"/>
+    </div>
+    <button class="login-btn" onclick="doLogin()">Masuk →</button>
+    <div class="login-error" id="login-error"></div>
+    <div class="login-info">
+      Tier 1 — Admin: akses penuh<br>
+      Tier 2 — Operator: hanya Ambil &amp; Simpan
+    </div>
+  </div>
+</div>
+
+<!-- ══ MAIN APP ══════════════════════════════════ -->
+<div id="app" style="display:none;">
+
 <nav>
   <div class="logo">Rumah<span>Stock</span></div>
-  <div class="nav-tabs">
+  <div class="nav-tabs" id="nav-tabs">
     <button class="active" onclick="showPage('scan',this)"><span class="nav-icon">📷</span>Scan</button>
-    <button onclick="showPage('bins',this)"><span class="nav-icon">📦</span>Bins</button>
-    <button onclick="showPage('history',this)"><span class="nav-icon">📋</span>History</button>
-    <button onclick="showPage('dashboard',this)"><span class="nav-icon">📊</span>Dashboard</button>
+    <button id="nav-bins"      onclick="showPage('bins',this)"><span class="nav-icon">📦</span>Bins</button>
+    <button id="nav-history"   onclick="showPage('history',this)"><span class="nav-icon">📋</span>History</button>
+    <button id="nav-dashboard" onclick="showPage('dashboard',this)"><span class="nav-icon">📊</span>Dashboard</button>
+  </div>
+  <div class="nav-right">
+    <span id="sync-status" class="syncing">⏳</span>
+    <button id="logout-btn" onclick="doLogout()">Keluar</button>
   </div>
 </nav>
 
-<!-- CAMERA FULLSCREEN -->
+<!-- CAMERA -->
 <div id="scanner-modal">
   <video id="cam-video" autoplay playsinline muted webkit-playsinline></video>
   <canvas id="cam-canvas"></canvas>
   <div class="cam-overlay"></div>
   <div class="cam-frame">
-    <div class="cam-corner-br"></div>
-    <div class="cam-corner-bl"></div>
+    <div class="cam-corner-br"></div><div class="cam-corner-bl"></div>
     <div class="cam-laser"></div>
     <div class="cam-flash" id="cam-flash"></div>
   </div>
   <div class="cam-hint" id="cam-hint">
-    Point at the QR code on the bin label
-    <small>Hold steady — scanning automatically</small>
+    Arahkan ke QR Code pada label bin
+    <small>Tahan agar stabil — scan otomatis</small>
   </div>
   <div class="cam-result-pill" id="cam-result-pill"></div>
   <div class="cam-btns">
     <button class="cam-btn" id="torch-btn" onclick="toggleTorch()">🔦 Torch</button>
-    <button class="cam-btn" onclick="closeScanner()">✕ Close</button>
+    <button class="cam-btn" onclick="closeScanner()">✕ Tutup</button>
   </div>
 </div>
 
@@ -290,11 +362,11 @@ nav{background:var(--dark);color:#fff;display:flex;align-items:center;
     <div class="bin-header" id="bin-header"></div>
     <div class="card" style="border-radius:0 0 12px 12px;margin-top:0;padding-top:12px;">
       <div class="action-row">
-        <button class="action-btn btn-out" onclick="openModal('out')"><span class="icon">📤</span>AMBIL</button>
-        <button class="action-btn btn-in"  onclick="openModal('in')"><span class="icon">📥</span>SIMPAN</button>
-        <button class="action-btn btn-opname" onclick="openModal('opname')"><span class="icon">🔢</span>OPNAME</button>
+        <button class="action-btn btn-out"    onclick="openModal('out')"><span class="icon">📤</span>AMBIL</button>
+        <button class="action-btn btn-in"     onclick="openModal('in')"><span class="icon">📥</span>SIMPAN</button>
+        <button class="action-btn btn-opname admin-only" onclick="openModal('opname')"><span class="icon">🔢</span>OPNAME</button>
       </div>
-      <div style="display:flex;gap:8px;margin-bottom:12px;">
+      <div id="admin-bin-actions" class="admin-only" style="display:flex;gap:8px;margin-bottom:12px;">
         <button onclick="openModal('additem')"
           style="flex:1;padding:10px;background:#FFF7E6;color:#B45309;border:1px solid #FDE68A;
                  border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">
@@ -312,7 +384,7 @@ nav{background:var(--dark);color:#fff;display:flex;align-items:center;
         </button>
       </div>
       <table class="items-table">
-        <thead><tr><th>#</th><th>Nama Barang</th><th>Qty</th><th>Unit</th><th></th></tr></thead>
+        <thead><tr><th>#</th><th>Nama Barang</th><th>Qty</th><th>Unit</th><th id="items-action-col"></th></tr></thead>
         <tbody id="items-body"></tbody>
       </table>
     </div>
@@ -322,7 +394,7 @@ nav{background:var(--dark);color:#fff;display:flex;align-items:center;
 
 <!-- BINS PAGE -->
 <div id="page-bins" class="page">
-  <button onclick="openModal('newbin')"
+  <button id="add-bin-btn" onclick="openModal('newbin')" class="admin-only"
     style="width:100%;margin-bottom:12px;padding:14px;background:var(--teal);color:#fff;
            border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;">
     ➕ Tambah Bin Baru
@@ -342,19 +414,14 @@ nav{background:var(--dark);color:#fff;display:flex;align-items:center;
 
 <!-- DASHBOARD PAGE -->
 <div id="page-dashboard" class="page">
-  <!-- stat cards — clickable -->
   <div class="stats-grid" id="stats-grid"></div>
-
-  <!-- drill-down panel — shown when a card is tapped -->
   <div id="dash-drilldown" style="display:none;">
     <div class="card">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
         <button onclick="closeDrilldown()"
-          style="background:#f0f0f0;border:none;border-radius:8px;padding:6px 12px;
-                 font-size:14px;cursor:pointer;">← Kembali</button>
+          style="background:#f0f0f0;border:none;border-radius:8px;padding:6px 12px;font-size:14px;cursor:pointer;">← Kembali</button>
         <div id="dd-title" style="font-size:15px;font-weight:700;color:var(--dark);flex:1;"></div>
       </div>
-      <!-- transaction filter bar — shown only for tx card -->
       <div id="dd-filter" style="display:none;margin-bottom:12px;">
         <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;" id="dd-period-pills">
           <span class="pill active" onclick="setTxPeriod('today',this)">Hari Ini</span>
@@ -362,7 +429,7 @@ nav{background:var(--dark);color:#fff;display:flex;align-items:center;
           <span class="pill" onclick="setTxPeriod('month',this)">Bulan Ini</span>
           <span class="pill" onclick="setTxPeriod('custom',this)">Pilih Tanggal</span>
         </div>
-        <div id="dd-date-range" style="display:none;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <div id="dd-date-range" style="display:none;gap:8px;align-items:center;flex-wrap:wrap;">
           <input type="date" id="dd-date-from" onchange="applyTxFilter()"
             style="padding:7px 10px;border:1.5px solid #ddd;border-radius:8px;font-size:13px;"/>
           <span style="color:#888;font-size:13px;">s/d</span>
@@ -373,8 +440,22 @@ nav{background:var(--dark);color:#fff;display:flex;align-items:center;
       <div id="dd-content"></div>
     </div>
   </div>
-
-  <!-- recent activity — hidden when drilldown is open -->
+  <div id="dash-trend-card" class="card" style="margin-bottom:14px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+      <div class="card-title" style="margin:0;">📈 Tren Konsumsi</div>
+      <div style="display:flex;gap:6px;">
+        <span class="pill active" id="trend-pill-7"  onclick="setTrendPeriod(7,this)">7 Hari</span>
+        <span class="pill"        id="trend-pill-30" onclick="setTrendPeriod(30,this)">30 Hari</span>
+        <span class="pill"        id="trend-pill-90" onclick="setTrendPeriod(90,this)">90 Hari</span>
+      </div>
+    </div>
+    <div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;">
+      <span class="pill active" id="trend-mode-daily" onclick="setTrendMode('daily',this)">Harian</span>
+      <span class="pill" id="trend-mode-item"         onclick="setTrendMode('item',this)">Per Barang</span>
+      <span class="pill" id="trend-mode-cat"          onclick="setTrendMode('cat',this)">Per Kategori</span>
+    </div>
+    <div id="trend-chart"></div>
+  </div>
   <div id="dash-activity-card" class="card">
     <div class="card-title">Aktivitas Terbaru</div>
     <div id="dash-activity"></div>
@@ -392,10 +473,10 @@ nav{background:var(--dark);color:#fff;display:flex;align-items:center;
 
 <!-- CONFIRM DIALOG -->
 <div id="confirm-overlay" class="modal-overlay" style="z-index:400;">
-  <div class="modal" style="border-radius:16px;max-height:auto;">
+  <div class="modal" style="border-radius:16px;">
     <div style="padding:20px;">
       <div id="confirm-title" style="font-size:16px;font-weight:700;margin-bottom:8px;"></div>
-      <div id="confirm-msg" style="font-size:13px;color:#666;"></div>
+      <div id="confirm-msg"   style="font-size:13px;color:#666;"></div>
     </div>
     <div class="modal-footer">
       <button class="btn-cancel" onclick="confirmNo()">Batal</button>
@@ -404,34 +485,52 @@ nav{background:var(--dark);color:#fff;display:flex;align-items:center;
   </div>
 </div>
 
-<!-- PRINT STOCK CARD OVERLAY -->
+<!-- PRINT OVERLAY -->
 <div id="print-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);
      z-index:500;align-items:flex-start;justify-content:center;padding:16px;overflow-y:auto;">
-  <div style="background:#fff;border-radius:16px;width:100%;max-width:420px;
-              margin:0 auto;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.4);">
-    <!-- overlay toolbar -->
+  <div style="background:#fff;border-radius:16px;width:100%;max-width:420px;margin:0 auto;overflow:hidden;">
     <div style="background:var(--dark);padding:12px 16px;display:flex;align-items:center;gap:10px;">
       <div style="flex:1;color:#fff;font-size:14px;font-weight:700;">🖨️ Stock Card Preview</div>
       <button onclick="triggerPrint()"
-        style="padding:8px 18px;background:var(--teal);color:#fff;border:none;
-               border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">
+        style="padding:8px 18px;background:var(--teal);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">
         Print / Save PDF
       </button>
       <button onclick="closePrintOverlay()"
-        style="padding:8px 14px;background:rgba(255,255,255,.15);color:#fff;border:none;
-               border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">✕</button>
+        style="padding:8px 14px;background:rgba(255,255,255,.15);color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer;">✕</button>
     </div>
-    <!-- the card itself -->
     <div id="stock-card-preview" style="padding:16px;"></div>
   </div>
 </div>
 
 <div class="toast" id="toast"></div>
+</div><!-- end #app -->
 
 <script>
-/* ═══════════════════════════════════════════════
-   DATA
-═══════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════
+   FIREBASE CONFIG
+   Replace the values below with your own Firebase project
+═══════════════════════════════════════════════════ */
+const FIREBASE_CONFIG = {
+  apiKey:            "AIzaSyD4GQtdqVO5OLHL7a8MYNz4kg2bKXWLnAo",
+  authDomain:        "rumahstock-ab34f.firebaseapp.com",
+  databaseURL:       "https://rumahstock-ab34f-default-rtdb.firebaseio.com",
+  projectId:         "rumahstock-ab34f",
+  storageBucket:     "rumahstock-ab34f.firebasestorage.app",
+  messagingSenderId: "187752703459",
+  appId:             "1:187752703459:web:6098e0e5b2ea13d6e0acd6"
+};
+
+/* ═══════════════════════════════════════════════════
+   USER ACCOUNTS  (change passwords here)
+═══════════════════════════════════════════════════ */
+const USERS = {
+  admin:    { password: 'admin123',    role: 'admin' },
+  operator: { password: 'operator123', role: 'operator' }
+};
+
+/* ═══════════════════════════════════════════════════
+   INITIAL DATA (used only if Firebase has no data yet)
+═══════════════════════════════════════════════════ */
 const BINS_INITIAL = [
   {id:"BIN-TOI-D3-05",cat:"Perlengkapan Toilet",rak:"D3",kotak:"5",items:[
     {name:"Muscle Gel Toilet",qty:6,unit:"Pack"},{name:"Kamper Bebek",qty:10,unit:"Pcs"},
@@ -440,8 +539,7 @@ const BINS_INITIAL = [
     {name:"Bebek Refill Karbol",qty:15,unit:"Pouch"}]},
   {id:"BIN-KEB-D3-06",cat:"Perlengkapan Kebersihan",rak:"D3",kotak:"6",items:[
     {name:"Serap Refill",qty:8,unit:"Pack"},{name:"Kit Sofa",qty:9,unit:"Bte"},
-    {name:"Anti Bau Sepatu",qty:17,unit:"Pack"},{name:"Kapur Semut",qty:4,unit:"Kotak"},
-    {name:"Lap Kain",qty:4,unit:"Pack"}]},
+    {name:"Anti Bau Sepatu",qty:17,unit:"Pack"},{name:"Kapur Semut",qty:4,unit:"Kotak"},{name:"Lap Kain",qty:4,unit:"Pack"}]},
   {id:"BIN-KEB-D2-03",cat:"Perlengkapan Kebersihan",rak:"D2",kotak:"3",items:[
     {name:"Lap Spons",qty:9,unit:"Pack"},{name:"Plastik Daur Ulang",qty:0,unit:"—"},
     {name:"Silica Gel",qty:0,unit:"—"},{name:"Sarung Tangan Karet",qty:3,unit:"Pack"}]},
@@ -470,8 +568,7 @@ const BINS_INITIAL = [
   {id:"BIN-PRI-F-LB",cat:"Perlengkapan Cuci Piring",rak:"F",kotak:"Lmr Bwh",items:[
     {name:"Sunlight",qty:28,unit:"Pouch"},{name:"Spons Cuci",qty:9,unit:"Pcs"},
     {name:"Spons Kawat",qty:3,unit:"Pcs"},{name:"Cif Cream",qty:11,unit:"Bte"},
-    {name:"Muscle Serbaguna",qty:12,unit:"Pouch"},{name:"Brodio",qty:4,unit:"Bte"},
-    {name:"Sunlight Botol",qty:4,unit:"Bte"}]},
+    {name:"Muscle Serbaguna",qty:12,unit:"Pouch"},{name:"Brodio",qty:4,unit:"Bte"},{name:"Sunlight Botol",qty:4,unit:"Bte"}]},
   {id:"BIN-KEB-F-LA",cat:"Perlengkapan Kebersihan",rak:"F",kotak:"Lmr Ats",items:[
     {name:"Biore Guard",qty:17,unit:"Pouch"},{name:"Super Pel",qty:7,unit:"Pouch"},
     {name:"Super Sol",qty:0,unit:"Pouch"},{name:"Pledge Oil",qty:3,unit:"Bte"},
@@ -516,254 +613,334 @@ const BINS_INITIAL = [
     {name:"Kasa Steril Dres",qty:7,unit:"Kotak"}]},
 ];
 
-/* ═══════════════════════════════════════════════
-   STATE  (localStorage + in-memory fallback)
-═══════════════════════════════════════════════ */
-let state = { bins: JSON.parse(JSON.stringify(BINS_INITIAL)), history: [] };
-(function loadState(){
-  try {
-    const s = localStorage.getItem('rumahstock_v3');
-    if(s){ const p=JSON.parse(s); if(p&&p.bins) state=p; }
-  } catch(e){}
-})();
-function saveState(){
-  try { localStorage.setItem('rumahstock_v3', JSON.stringify(state)); } catch(e){}
+/* ═══════════════════════════════════════════════════
+   STATE & AUTH
+═══════════════════════════════════════════════════ */
+let state   = { bins: JSON.parse(JSON.stringify(BINS_INITIAL)), history: [] };
+let db      = null;
+let dbRef   = null;
+let currentUser = null;   // { username, role }
+let currentBin  = null;
+
+function isAdmin(){ return currentUser && currentUser.role === 'admin'; }
+
+/* ═══════════════════════════════════════════════════
+   LOGIN / LOGOUT
+═══════════════════════════════════════════════════ */
+function doLogin(){
+  const user = document.getElementById('login-user').value.trim().toLowerCase();
+  const pass = document.getElementById('login-pass').value;
+  const err  = document.getElementById('login-error');
+
+  if(!USERS[user] || USERS[user].password !== pass){
+    err.textContent = '❌ Username atau password salah';
+    document.getElementById('login-pass').value = '';
+    return;
+  }
+  err.textContent = '';
+  currentUser = { username: user, role: USERS[user].role };
+
+  // Save session
+  try{ localStorage.setItem('rs_session', JSON.stringify(currentUser)); }catch(e){}
+
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  applyRoleUI();
+  initFirebase();
 }
 
-let currentBin = null;
+function doLogout(){
+  currentUser = null;
+  try{ localStorage.removeItem('rs_session'); }catch(e){}
+  if(db) db.goOffline();
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('login-user').value = '';
+  document.getElementById('login-pass').value = '';
+  document.getElementById('login-error').textContent = '';
+}
 
-/* ═══════════════════════════════════════════════
-   CAMERA — uses ImageCapture + BarcodeDetector
-   Falls back gracefully on unsupported browsers
-═══════════════════════════════════════════════ */
+function applyRoleUI(){
+  const admin = isAdmin();
+  // Admin-only elements
+  document.querySelectorAll('.admin-only').forEach(el => {
+    el.style.display = admin ? '' : 'none';
+  });
+  // Nav tabs — operators only see Scan
+  document.getElementById('nav-bins').style.display      = admin ? '' : 'none';
+  document.getElementById('nav-history').style.display   = admin ? '' : 'none';
+  document.getElementById('nav-dashboard').style.display = admin ? '' : 'none';
+  // Items table — hide edit/delete col for operators
+  const ac = document.getElementById('items-action-col');
+  if(ac) ac.style.display = admin ? '' : 'none';
+  // Role badge in nav (update logo area)
+  const badge = `<span class="role-badge ${currentUser.role}">${currentUser.role}</span>`;
+  document.querySelector('.logo').innerHTML = `Rumah<span>Stock</span> ${badge}`;
+}
+
+// Restore session on page load
+(function restoreSession(){
+  try{
+    const s = localStorage.getItem('rs_session');
+    if(s){
+      currentUser = JSON.parse(s);
+      if(USERS[currentUser.username] && USERS[currentUser.username].role === currentUser.role){
+        document.getElementById('login-screen').style.display = 'none';
+        document.getElementById('app').style.display = 'block';
+        applyRoleUI();
+        initFirebase();
+      }
+    }
+  }catch(e){}
+})();
+
+/* ═══════════════════════════════════════════════════
+   FIREBASE SYNC
+═══════════════════════════════════════════════════ */
+function initFirebase(){
+  setSyncStatus('syncing');
+  try{
+    // Init only once
+    if(!firebase.apps.length){
+      firebase.initializeApp(FIREBASE_CONFIG);
+    }
+    db    = firebase.database();
+    dbRef = db.ref('rumahstock');
+
+    // Listen for real-time updates
+    dbRef.on('value', snap => {
+      const data = snap.val();
+      if(data && data.bins){
+        state = data;
+        if(!state.history) state.history = [];
+        // Refresh current view
+        const activePage = document.querySelector('.page.active');
+        if(activePage){
+          const pid = activePage.id.replace('page-','');
+          if(pid==='bins') renderBins();
+          if(pid==='history') renderHistory();
+          if(pid==='dashboard') renderDashboard();
+          if(pid==='scan' && currentBin){
+            const refreshed = state.bins.find(b=>b.id===currentBin.id);
+            if(refreshed){ currentBin=refreshed; renderItemsTable(refreshed); }
+          }
+        }
+        setSyncStatus('online');
+      } else {
+        // First time — push initial data
+        dbRef.set(state).then(()=>setSyncStatus('online')).catch(()=>setSyncStatus('offline'));
+      }
+    }, err => {
+      setSyncStatus('offline');
+      showToast('⚠️ Tidak bisa tersambung ke database');
+    });
+
+    db.ref('.info/connected').on('value', snap => {
+      setSyncStatus(snap.val() ? 'online' : 'offline');
+    });
+
+  }catch(e){
+    setSyncStatus('offline');
+    showToast('⚠️ Firebase belum dikonfigurasi — gunakan mode offline');
+  }
+}
+
+function saveState(){
+  // Save to Firebase (syncs to all devices)
+  if(db && dbRef){
+    setSyncStatus('syncing');
+    dbRef.set(state)
+      .then(()=>setSyncStatus('online'))
+      .catch(()=>{ setSyncStatus('offline'); showToast('⚠️ Gagal sync — periksa koneksi'); });
+  }
+  // Always save locally as fallback
+  try{ localStorage.setItem('rs_offline', JSON.stringify(state)); }catch(e){}
+}
+
+function setSyncStatus(s){
+  const el = document.getElementById('sync-status');
+  if(!el) return;
+  const map = { online:'🟢 Sync', offline:'🔴 Offline', syncing:'⏳ Sync...' };
+  el.textContent  = map[s] || s;
+  el.className = 'syncing';
+  el.className = s;
+}
+
+/* ═══════════════════════════════════════════════════
+   CAMERA SCANNER
+═══════════════════════════════════════════════════ */
 let camStream=null, scanLoop=null, torchOn=false, scanLocked=false;
 
 async function openScanner(){
-  // First check if getUserMedia is available at all
-  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
-    showToast('⚠️ Kamera tidak didukung browser ini — gunakan Manual Entry');
-    return;
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
+    showToast('⚠️ Kamera tidak didukung — gunakan Manual Entry'); return;
   }
-
   document.getElementById('scanner-modal').classList.add('open');
-  scanLocked = false;
-  document.getElementById('cam-hint').innerHTML =
-    'Menghubungkan kamera…<small>Mohon tunggu sebentar</small>';
-
-  try {
-    // Simple constraints work best cross-browser
-    camStream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: 'environment' },
-      audio: false
-    });
-
-    const video = document.getElementById('cam-video');
-    video.srcObject = camStream;
-    video.muted = true;
-
-    // Wait for video to be ready — critical for iOS
-    await new Promise((resolve) => {
-      video.onloadedmetadata = resolve;
-      video.oncanplay = resolve;
-      setTimeout(resolve, 4000); // hard timeout
-    });
+  scanLocked=false;
+  document.getElementById('cam-hint').innerHTML='Menghubungkan kamera…<small>Mohon tunggu</small>';
+  try{
+    camStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'},audio:false});
+    const video=document.getElementById('cam-video');
+    video.srcObject=camStream; video.muted=true;
+    await new Promise(res=>{ video.onloadedmetadata=res; video.oncanplay=res; setTimeout(res,4000); });
     video.play().catch(()=>{});
-
-    // Short delay before starting decode on iOS
     setTimeout(()=>{
-      document.getElementById('cam-hint').innerHTML =
-        'Arahkan ke QR Code pada label bin<small>Tahan agar stabil</small>';
+      document.getElementById('cam-hint').innerHTML='Arahkan ke QR Code pada label bin<small>Tahan agar stabil</small>';
       startDecodeLoop();
-    }, 800);
-
-  } catch(err) {
+    },800);
+  }catch(err){
     closeScanner();
-    if(err.name === 'NotAllowedError'){
-      showToast('📸 Izin kamera ditolak');
-      // Show instructions on screen
-      document.getElementById('scan-input').placeholder = 'Izin kamera ditolak — ketik Bin ID di sini';
-    } else {
-      showToast('⚠️ Kamera tidak bisa dibuka — gunakan Manual Entry');
-    }
+    showToast(err.name==='NotAllowedError'?'📸 Izin kamera ditolak':'⚠️ Kamera tidak bisa dibuka');
   }
 }
 
 function closeScanner(){
   document.getElementById('scanner-modal').classList.remove('open');
-  if(scanLoop){ cancelAnimationFrame(scanLoop); scanLoop=null; }
-  if(camStream){ camStream.getTracks().forEach(t=>{ try{t.stop();}catch(e){} }); camStream=null; }
-  torchOn = false;
-  try{ document.getElementById('torch-btn').classList.remove('torch-on'); }catch(e){}
-  try{ document.getElementById('cam-result-pill').classList.remove('show'); }catch(e){}
+  if(scanLoop){cancelAnimationFrame(scanLoop);scanLoop=null;}
+  if(camStream){camStream.getTracks().forEach(t=>{try{t.stop();}catch(e){}});camStream=null;}
+  torchOn=false;
+  try{document.getElementById('torch-btn').classList.remove('torch-on');}catch(e){}
+  try{document.getElementById('cam-result-pill').classList.remove('show');}catch(e){}
 }
 
 function startDecodeLoop(){
-  const video  = document.getElementById('cam-video');
-  const canvas = document.getElementById('cam-canvas');
-  const ctx    = canvas.getContext('2d', { willReadFrequently: true });
-
-  // Try to get BarcodeDetector
-  let detector = null;
-  if(typeof BarcodeDetector !== 'undefined'){
-    try {
-      detector = new BarcodeDetector({ formats: ['qr_code'] });
-    } catch(e){ detector = null; }
+  const video=document.getElementById('cam-video');
+  const canvas=document.getElementById('cam-canvas');
+  const ctx=canvas.getContext('2d',{willReadFrequently:true});
+  let detector=null;
+  if(typeof BarcodeDetector!=='undefined'){
+    try{detector=new BarcodeDetector({formats:['qr_code']});}catch(e){}
   }
-
   if(!detector){
-    // BarcodeDetector not available
-    document.getElementById('cam-hint').innerHTML =
-      '⚠️ QR scan tidak didukung browser ini<br>' +
-      '<small>Gunakan Manual Entry — ketik Bin ID di bawah</small>';
-    // Close scanner and focus manual input
-    setTimeout(()=>{
-      closeScanner();
-      document.getElementById('scan-input').focus();
-    }, 2500);
+    document.getElementById('cam-hint').innerHTML='⚠️ QR scan tidak didukung<br><small>Gunakan Manual Entry</small>';
+    setTimeout(()=>{closeScanner();document.getElementById('scan-input').focus();},2500);
     return;
   }
-
-  let frameSkip = 0;
+  let skip=0;
   function tick(){
-    if(!camStream){ return; }
-    frameSkip++;
-    // Scan every 6th frame — saves CPU/battery
-    if(frameSkip % 6 === 0 && !scanLocked && video.videoWidth > 0){
-      canvas.width  = video.videoWidth;
-      canvas.height = video.videoHeight;
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      detector.detect(canvas)
-        .then(codes => { if(codes.length > 0) handleScanResult(codes[0].rawValue); })
-        .catch(()=>{});
+    if(!camStream)return;
+    if(++skip%6===0&&!scanLocked&&video.videoWidth>0){
+      canvas.width=video.videoWidth; canvas.height=video.videoHeight;
+      ctx.drawImage(video,0,0,canvas.width,canvas.height);
+      detector.detect(canvas).then(c=>{if(c.length)handleScanResult(c[0].rawValue);}).catch(()=>{});
     }
-    scanLoop = requestAnimationFrame(tick);
+    scanLoop=requestAnimationFrame(tick);
   }
-  scanLoop = requestAnimationFrame(tick);
+  scanLoop=requestAnimationFrame(tick);
 }
 
 async function toggleTorch(){
-  if(!camStream) return;
-  const track = camStream.getVideoTracks()[0];
-  try {
-    torchOn = !torchOn;
-    await track.applyConstraints({ advanced: [{ torch: torchOn }] });
-    document.getElementById('torch-btn').classList.toggle('torch-on', torchOn);
-  } catch(e){ showToast('Torch tidak tersedia di perangkat ini'); }
+  if(!camStream)return;
+  const track=camStream.getVideoTracks()[0];
+  try{torchOn=!torchOn;await track.applyConstraints({advanced:[{torch:torchOn}]});
+    document.getElementById('torch-btn').classList.toggle('torch-on',torchOn);
+  }catch(e){showToast('Torch tidak tersedia');}
 }
 
 function handleScanResult(raw){
-  if(scanLocked) return;
-  const id = raw.replace(/^.*?(?:homestock|rumahstock):\/\/bin\//i,'').trim().toUpperCase();
-  const bin = state.bins.find(b => b.id === id);
-
-  const pill = document.getElementById('cam-result-pill');
-  if(!bin){
-    // QR detected but not a bin QR — ignore silently, keep scanning
-    return;
-  }
-
-  scanLocked = true;
-  const flash = document.getElementById('cam-flash');
-  flash.classList.remove('go'); void flash.offsetWidth; flash.classList.add('go');
-  pill.textContent = '✅ ' + bin.cat + ' · Rak ' + bin.rak;
-  pill.classList.add('show');
-  if(navigator.vibrate) navigator.vibrate([60,30,60]);
-
-  setTimeout(()=>{
-    closeScanner();
-    document.getElementById('scan-input').value = id;
-    loadBin(bin);
-  }, 700);
+  if(scanLocked)return;
+  const id=raw.replace(/^.*?(?:homestock|rumahstock):\/\/bin\//i,'').trim().toUpperCase();
+  const bin=state.bins.find(b=>b.id===id);
+  if(!bin)return;
+  scanLocked=true;
+  const flash=document.getElementById('cam-flash');
+  flash.classList.remove('go');void flash.offsetWidth;flash.classList.add('go');
+  const pill=document.getElementById('cam-result-pill');
+  pill.textContent='✅ '+bin.cat+' · Rak '+bin.rak; pill.classList.add('show');
+  if(navigator.vibrate)navigator.vibrate([60,30,60]);
+  setTimeout(()=>{closeScanner();document.getElementById('scan-input').value=id;loadBin(bin);},700);
 }
 
-/* ═══════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════
    SCAN / BIN
-═══════════════════════════════════════════════ */
-function focusManual(){ document.getElementById('scan-input').focus(); }
+═══════════════════════════════════════════════════ */
+function focusManual(){document.getElementById('scan-input').focus();}
 
 function scanBin(){
-  const raw = document.getElementById('scan-input').value.trim().toUpperCase();
-  const id  = raw.replace(/^.*?(?:HOMESTOCK|RUMAHSTOCK):\/\/BIN\//,'');
-  const bin = state.bins.find(b => b.id === id);
-  document.getElementById('no-bin').style.display  = bin ? 'none'  : 'block';
-  document.getElementById('bin-panel').style.display = bin ? 'block' : 'none';
-  if(bin) loadBin(bin);
+  const raw=document.getElementById('scan-input').value.trim().toUpperCase();
+  const id=raw.replace(/^.*?(?:HOMESTOCK|RUMAHSTOCK):\/\/BIN\//,'');
+  const bin=state.bins.find(b=>b.id===id);
+  document.getElementById('no-bin').style.display=bin?'none':'block';
+  document.getElementById('bin-panel').style.display=bin?'block':'none';
+  if(bin)loadBin(bin);
 }
 
 function loadBin(bin){
-  currentBin = bin;
-  document.getElementById('bin-panel').style.display = 'block';
-  document.getElementById('no-bin').style.display    = 'none';
-  renderBinHeader(bin);
-  renderItemsTable(bin);
-  setTimeout(()=> document.getElementById('bin-panel')
-    .scrollIntoView({behavior:'smooth',block:'start'}), 100);
+  currentBin=bin;
+  document.getElementById('bin-panel').style.display='block';
+  document.getElementById('no-bin').style.display='none';
+  renderBinHeader(bin); renderItemsTable(bin);
+  setTimeout(()=>document.getElementById('bin-panel').scrollIntoView({behavior:'smooth',block:'start'}),100);
 }
 
 function renderBinHeader(bin){
-  document.getElementById('bin-header').innerHTML =
-    `<div class="cat"><h3>${bin.cat}</h3><p>${bin.id}</p></div>
-     <div class="rak-box">
-       <div class="rak-label">RAK</div>
-       <div class="rak-num">${bin.rak}</div>
-       <div class="rak-kotak">Kotak ${bin.kotak}</div>
-     </div>`;
+  document.getElementById('bin-header').innerHTML=`
+    <div class="cat"><h3>${bin.cat}</h3><p>${bin.id}</p></div>
+    <div class="rak-box">
+      <div class="rak-label">RAK</div>
+      <div class="rak-num">${bin.rak}</div>
+      <div class="rak-kotak">Kotak ${bin.kotak}</div>
+    </div>`;
 }
 
 function renderItemsTable(bin){
-  const tbody = document.getElementById('items-body');
+  const tbody=document.getElementById('items-body');
+  const admin=isAdmin();
   if(!bin.items.length){
-    tbody.innerHTML = '<tr><td colspan="5" class="empty">Belum ada barang — tap Tambah Barang</td></tr>';
+    tbody.innerHTML=`<tr><td colspan="${admin?5:4}" class="empty">Belum ada barang${admin?' — tap Tambah Barang':''}</td></tr>`;
     return;
   }
-  tbody.innerHTML = bin.items.map((it,i) => {
-    const cls = it.qty===0?'zero':it.qty<=2?'low':'';
+  tbody.innerHTML=bin.items.map((it,i)=>{
+    const cls=it.qty===0?'zero':it.qty<=2?'low':'';
+    const actionCell=admin
+      ?`<td style="white-space:nowrap;">
+          <button onclick="openEditItem(${i})" style="background:none;border:none;font-size:15px;cursor:pointer;color:#94a3b8;padding:0 3px;">✏️</button>
+          <button onclick="deleteItem(${i})"   style="background:none;border:none;font-size:15px;cursor:pointer;color:#ccc;padding:0 3px;">🗑</button>
+        </td>`
+      :'';
     return `<tr>
       <td>${i+1}</td><td>${it.name}</td>
       <td><span class="qty-badge ${cls}">${it.qty}</span></td>
       <td>${it.unit}</td>
-      <td style="white-space:nowrap;">
-        <button onclick="openEditItem(${i})"
-          style="background:none;border:none;font-size:15px;cursor:pointer;color:#94a3b8;padding:0 3px;">✏️</button>
-        <button onclick="deleteItem(${i})"
-          style="background:none;border:none;font-size:15px;cursor:pointer;color:#ccc;padding:0 3px;">🗑</button>
-      </td>
+      ${actionCell}
     </tr>`;
   }).join('');
 }
 
-/* ═══════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════
    NAVIGATION
-═══════════════════════════════════════════════ */
-function showPage(id, btn){
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.nav-tabs button').forEach(b => b.classList.remove('active'));
+═══════════════════════════════════════════════════ */
+function showPage(id,btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-tabs button').forEach(b=>b.classList.remove('active'));
   document.getElementById('page-'+id).classList.add('active');
-  if(btn) btn.classList.add('active');
-  if(id==='bins')      renderBins();
-  if(id==='history')   renderHistory();
-  if(id==='dashboard') renderDashboard();
+  if(btn)btn.classList.add('active');
+  if(id==='bins')renderBins();
+  if(id==='history')renderHistory();
+  if(id==='dashboard')renderDashboard();
 }
 
-/* ═══════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════
    MODALS
-═══════════════════════════════════════════════ */
+═══════════════════════════════════════════════════ */
 function openModal(type){
-  if(['out','in','opname','additem','editbin','edititem'].includes(type) && !currentBin) return;
-  const bin = currentBin;
-  const labels = {
-    out:'📤 AMBIL BARANG', in:'📥 SIMPAN BARANG', opname:'🔢 STOCK OPNAME',
-    additem:'➕ TAMBAH BARANG', editbin:'✏️ EDIT BIN', newbin:'📦 BIN BARU',
-    edititem:'✏️ EDIT BARANG'
+  // Role check
+  const adminOnly=['opname','additem','editbin','edititem','newbin'];
+  if(adminOnly.includes(type)&&!isAdmin()){showToast('⛔ Akses Admin saja');return;}
+  if(['out','in','opname','additem','editbin','edititem'].includes(type)&&!currentBin)return;
+  const bin=currentBin;
+  const labels={
+    out:'📤 AMBIL BARANG',in:'📥 SIMPAN BARANG',opname:'🔢 STOCK OPNAME',
+    additem:'➕ TAMBAH BARANG',edititem:'✏️ EDIT BARANG',
+    editbin:'✏️ EDIT BIN',newbin:'📦 BIN BARU'
   };
-  document.getElementById('modal-head').className = 'modal-head ' + type;
-  document.getElementById('modal-head').textContent = labels[type] || type;
+  document.getElementById('modal-head').className='modal-head '+type;
+  document.getElementById('modal-head').textContent=labels[type]||type;
 
-  if(type==='out' || type==='in'){
-    if(!bin.items.length){ showToast('Bin kosong — tambah barang dulu'); return; }
-    const opts = bin.items.map((it,i)=>
-      `<option value="${i}">${it.name} — ${it.qty} ${it.unit}</option>`).join('');
-    document.getElementById('modal-body').innerHTML = `
+  if(type==='out'||type==='in'){
+    if(!bin.items.length){showToast('Bin kosong — tambah barang dulu');return;}
+    const opts=bin.items.map((it,i)=>`<option value="${i}">${it.name} — ${it.qty} ${it.unit}</option>`).join('');
+    document.getElementById('modal-body').innerHTML=`
       <label>Pilih Barang</label>
       <select id="m-item" onchange="updateCurQty()">${opts}</select>
       <label>Qty Sekarang</label>
@@ -772,276 +949,232 @@ function openModal(type){
       <input type="number" id="m-qty" min="1" value="1" inputmode="numeric"/>
       <label>Catatan (opsional)</label>
       <textarea id="m-note" rows="2" placeholder="Opsional…"></textarea>`;
-    document.getElementById('modal-footer').innerHTML = `
+    document.getElementById('modal-footer').innerHTML=`
       <button class="btn-cancel" onclick="closeModal()">Batal</button>
-      <button class="btn-confirm-${type}" onclick="confirmTx('${type}')">
-        ${type==='out'?'✅ Ambil':'✅ Simpan'}</button>`;
+      <button class="btn-confirm-${type}" onclick="confirmTx('${type}')">${type==='out'?'✅ Ambil':'✅ Simpan'}</button>`;
 
-  } else if(type==='opname'){
-    const rows = bin.items.map((it,i)=>`
+  }else if(type==='opname'){
+    const rows=bin.items.map((it,i)=>`
       <div class="opname-row">
         <div class="opname-name">${it.name}</div>
         <div class="opname-sys">${it.qty}</div>
-        <input class="opname-input" type="number" inputmode="numeric"
-               id="op-${i}" min="0" value="${it.qty}" oninput="updateDiff(${i},${it.qty})"/>
+        <input class="opname-input" type="number" inputmode="numeric" id="op-${i}" min="0" value="${it.qty}" oninput="updateDiff(${i},${it.qty})"/>
         <div class="opname-diff" id="opd-${i}">—</div>
       </div>`).join('');
-    document.getElementById('modal-body').innerHTML = `
+    document.getElementById('modal-body').innerHTML=`
       <div style="display:flex;gap:8px;font-size:11px;font-weight:700;color:#888;margin-bottom:6px;">
         <div style="flex:1">NAMA</div><div style="width:38px;text-align:center">SYS</div>
-        <div style="width:68px;text-align:center">AKTUAL</div>
-        <div style="width:46px;text-align:center">DIFF</div>
+        <div style="width:68px;text-align:center">AKTUAL</div><div style="width:46px;text-align:center">DIFF</div>
       </div>${rows}`;
-    document.getElementById('modal-footer').innerHTML = `
+    document.getElementById('modal-footer').innerHTML=`
       <button class="btn-cancel" onclick="closeModal()">Batal</button>
       <button class="btn-confirm-opname" onclick="confirmOpname()">✅ Simpan</button>`;
 
-  } else if(type==='additem'){
-    document.getElementById('modal-body').innerHTML = `
-      <label>Nama Barang</label>
-      <input type="text" id="ai-name" placeholder="Contoh: Sabun Mandi" autocomplete="off"/>
-      <label>Qty Awal</label>
-      <input type="number" id="ai-qty" min="0" value="0" inputmode="numeric"/>
-      <label>Unit</label>
-      <input type="text" id="ai-unit" placeholder="Pcs / Pack / Bte / Pouch"/>`;
-    document.getElementById('modal-footer').innerHTML = `
+  }else if(type==='additem'){
+    document.getElementById('modal-body').innerHTML=`
+      <label>Nama Barang</label><input type="text" id="ai-name" placeholder="Contoh: Sabun Mandi" autocomplete="off"/>
+      <label>Qty Awal</label><input type="number" id="ai-qty" min="0" value="0" inputmode="numeric"/>
+      <label>Unit</label><input type="text" id="ai-unit" placeholder="Pcs / Pack / Bte / Pouch"/>`;
+    document.getElementById('modal-footer').innerHTML=`
       <button class="btn-cancel" onclick="closeModal()">Batal</button>
       <button class="btn-confirm-in" onclick="confirmAddItem()">✅ Tambah</button>`;
-    setTimeout(()=>{ try{document.getElementById('ai-name').focus();}catch(e){} },100);
+    setTimeout(()=>{try{document.getElementById('ai-name').focus();}catch(e){}},100);
 
-  } else if(type==='edititem'){
-    const idx = _editItemIndex;
-    const it  = bin.items[idx];
-    document.getElementById('modal-body').innerHTML = `
-      <label>Nama Barang</label>
-      <input type="text" id="ei-name" value="${it.name}" autocomplete="off"/>
-      <label>Qty</label>
-      <input type="number" id="ei-qty" value="${it.qty}" min="0" inputmode="numeric"/>
-      <label>Unit</label>
-      <input type="text" id="ei-unit" value="${it.unit}" placeholder="Pcs / Pack / Bte / Pouch"/>`;
-    document.getElementById('modal-footer').innerHTML = `
+  }else if(type==='edititem'){
+    const idx=_editItemIndex, it=bin.items[idx];
+    document.getElementById('modal-body').innerHTML=`
+      <label>Nama Barang</label><input type="text" id="ei-name" value="${it.name}" autocomplete="off"/>
+      <label>Qty</label><input type="number" id="ei-qty" value="${it.qty}" min="0" inputmode="numeric"/>
+      <label>Unit</label><input type="text" id="ei-unit" value="${it.unit}" placeholder="Pcs / Pack / Bte / Pouch"/>`;
+    document.getElementById('modal-footer').innerHTML=`
       <button class="btn-cancel" onclick="closeModal()">Batal</button>
       <button class="btn-confirm-opname" onclick="confirmEditItem(${idx})">✅ Simpan</button>`;
-    setTimeout(()=>{ try{document.getElementById('ei-name').focus();}catch(e){} },100);
+    setTimeout(()=>{try{document.getElementById('ei-name').focus();}catch(e){}},100);
 
-  } else if(type==='editbin'){
-    document.getElementById('modal-body').innerHTML = `
-      <label>Nama Kategori</label>
-      <input type="text" id="eb-cat" value="${bin.cat}"/>
-      <label>Rak</label>
-      <input type="text" id="eb-rak" value="${bin.rak}"/>
-      <label>Kotak</label>
-      <input type="text" id="eb-kotak" value="${bin.kotak}"/>
+  }else if(type==='editbin'){
+    document.getElementById('modal-body').innerHTML=`
+      <label>Nama Kategori</label><input type="text" id="eb-cat" value="${bin.cat}"/>
+      <label>Rak</label><input type="text" id="eb-rak" value="${bin.rak}"/>
+      <label>Kotak</label><input type="text" id="eb-kotak" value="${bin.kotak}"/>
       <div style="margin-top:20px;padding-top:16px;border-top:1px solid #eee;">
         <button onclick="confirmDeleteBin()"
           style="width:100%;padding:12px;background:#FEE2E2;color:var(--red);
-                 border:1.5px solid #FECACA;border-radius:8px;font-size:14px;
-                 font-weight:700;cursor:pointer;">🗑 Hapus Bin Ini</button>
-      </div>`;
-    document.getElementById('modal-footer').innerHTML = `
+                 border:1.5px solid #FECACA;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;">
+          🗑 Hapus Bin Ini</button></div>`;
+    document.getElementById('modal-footer').innerHTML=`
       <button class="btn-cancel" onclick="closeModal()">Batal</button>
       <button class="btn-confirm-opname" onclick="confirmEditBin()">✅ Simpan</button>`;
 
-  } else if(type==='newbin'){
-    document.getElementById('modal-body').innerHTML = `
-      <label>Nama Kategori</label>
-      <input type="text" id="nb-cat" placeholder="Contoh: Perlengkapan Dapur"/>
-      <label>Rak</label>
-      <input type="text" id="nb-rak" placeholder="Contoh: A1"/>
-      <label>Kotak</label>
-      <input type="text" id="nb-kotak" placeholder="Contoh: 3"/>
+  }else if(type==='newbin'){
+    document.getElementById('modal-body').innerHTML=`
+      <label>Nama Kategori</label><input type="text" id="nb-cat" placeholder="Contoh: Perlengkapan Dapur"/>
+      <label>Rak</label><input type="text" id="nb-rak" placeholder="Contoh: A1"/>
+      <label>Kotak</label><input type="text" id="nb-kotak" placeholder="Contoh: 3"/>
       <label>Bin ID <small style="font-weight:400;color:#aaa;">(auto, bisa diubah)</small></label>
       <input type="text" id="nb-id" placeholder="BIN-DAP-A1-03"/>`;
     setTimeout(()=>{
-      const c=document.getElementById('nb-cat');
-      const r=document.getElementById('nb-rak');
-      const k=document.getElementById('nb-kotak');
+      const c=document.getElementById('nb-cat'),r=document.getElementById('nb-rak'),k=document.getElementById('nb-kotak');
       function gen(){
         const cv=(c.value.trim().split(' ')[0]||'BIN').substring(0,3).toUpperCase();
-        const rv=(r.value.trim()||'X').toUpperCase();
-        const kv=(k.value.trim()||'0').toUpperCase();
-        document.getElementById('nb-id').value=`BIN-${cv}-${rv}-${kv}`;
+        document.getElementById('nb-id').value=`BIN-${cv}-${(r.value.trim()||'X').toUpperCase()}-${(k.value.trim()||'0').toUpperCase()}`;
       }
       c.oninput=r.oninput=k.oninput=gen;
       try{c.focus();}catch(e){}
     },100);
-    document.getElementById('modal-footer').innerHTML = `
+    document.getElementById('modal-footer').innerHTML=`
       <button class="btn-cancel" onclick="closeModal()">Batal</button>
       <button class="btn-confirm-in" onclick="confirmNewBin()">✅ Buat Bin</button>`;
   }
   document.getElementById('modal-overlay').classList.add('open');
 }
 
-function closeModal(){ document.getElementById('modal-overlay').classList.remove('open'); }
+function closeModal(){document.getElementById('modal-overlay').classList.remove('open');}
 
 function updateCurQty(){
-  const i = parseInt(document.getElementById('m-item').value);
-  const it = currentBin.items[i];
-  document.getElementById('m-curqty').innerHTML = `${it.qty}<span>${it.unit}</span>`;
+  const i=parseInt(document.getElementById('m-item').value);
+  const it=currentBin.items[i];
+  document.getElementById('m-curqty').innerHTML=`${it.qty}<span>${it.unit}</span>`;
 }
-
-function updateDiff(i, sys){
-  const actual = parseInt(document.getElementById(`op-${i}`).value)||0;
-  const diff = actual - sys;
-  const el = document.getElementById(`opd-${i}`);
-  el.textContent = diff===0?'—':(diff>0?'+'+diff:diff);
-  el.className = 'opname-diff '+(diff>0?'pos':diff<0?'neg':'');
+function updateDiff(i,sys){
+  const actual=parseInt(document.getElementById(`op-${i}`).value)||0;
+  const diff=actual-sys;
+  const el=document.getElementById(`opd-${i}`);
+  el.textContent=diff===0?'—':(diff>0?'+'+diff:diff);
+  el.className='opname-diff '+(diff>0?'pos':diff<0?'neg':'');
 }
 
 function confirmTx(type){
-  const i   = parseInt(document.getElementById('m-item').value);
-  const qty = parseInt(document.getElementById('m-qty').value)||0;
-  const note = document.getElementById('m-note').value.trim();
-  if(qty<=0){ showToast('⚠️ Masukkan jumlah yang valid'); return; }
-  const it = currentBin.items[i];
-  if(type==='out' && qty>it.qty){ showToast(`⚠️ Stok hanya ${it.qty} ${it.unit}`); return; }
-  const before = it.qty;
-  it.qty = type==='out' ? it.qty-qty : it.qty+qty;
-  addHistory(type, currentBin, it.name, qty, it.unit, before, it.qty, note);
+  const i=parseInt(document.getElementById('m-item').value);
+  const qty=parseInt(document.getElementById('m-qty').value)||0;
+  const note=document.getElementById('m-note').value.trim();
+  if(qty<=0){showToast('⚠️ Masukkan jumlah yang valid');return;}
+  const it=currentBin.items[i];
+  if(type==='out'&&qty>it.qty){showToast(`⚠️ Stok hanya ${it.qty} ${it.unit}`);return;}
+  const before=it.qty;
+  it.qty=type==='out'?it.qty-qty:it.qty+qty;
+  addHistory(type,currentBin,it.name,qty,it.unit,before,it.qty,note);
   saveState(); renderItemsTable(currentBin); closeModal();
-  showToast(type==='out' ? `📤 ${qty} ${it.unit} diambil` : `📥 ${qty} ${it.unit} disimpan`);
+  showToast(type==='out'?`📤 ${qty} ${it.unit} diambil`:`📥 ${qty} ${it.unit} disimpan`);
 }
 
 function confirmOpname(){
   const changes=[];
   currentBin.items.forEach((it,i)=>{
-    const actual = parseInt(document.getElementById(`op-${i}`).value);
-    if(!isNaN(actual) && actual!==it.qty){
-      changes.push({name:it.name,unit:it.unit,before:it.qty,after:actual});
-      it.qty = actual;
-    }
+    const actual=parseInt(document.getElementById(`op-${i}`).value);
+    if(!isNaN(actual)&&actual!==it.qty){changes.push({name:it.name,unit:it.unit,before:it.qty,after:actual});it.qty=actual;}
   });
-  if(!changes.length){ showToast('Tidak ada perubahan'); closeModal(); return; }
-  changes.forEach(c => addHistory('opname',currentBin,c.name,
-    Math.abs(c.after-c.before),c.unit,c.before,c.after,'Stock Opname'));
+  if(!changes.length){showToast('Tidak ada perubahan');closeModal();return;}
+  changes.forEach(c=>addHistory('opname',currentBin,c.name,Math.abs(c.after-c.before),c.unit,c.before,c.after,'Stock Opname'));
   saveState(); renderItemsTable(currentBin); closeModal();
   showToast(`✅ Opname selesai — ${changes.length} item diperbarui`);
 }
 
 function confirmAddItem(){
-  const name = document.getElementById('ai-name').value.trim();
-  const qty  = parseInt(document.getElementById('ai-qty').value)||0;
-  const unit = document.getElementById('ai-unit').value.trim();
-  if(!name){ showToast('⚠️ Nama barang tidak boleh kosong'); return; }
-  currentBin.items.push({name, qty, unit});
+  const name=document.getElementById('ai-name').value.trim();
+  const qty=parseInt(document.getElementById('ai-qty').value)||0;
+  const unit=document.getElementById('ai-unit').value.trim();
+  if(!name){showToast('⚠️ Nama barang tidak boleh kosong');return;}
+  currentBin.items.push({name,qty,unit});
   saveState(); renderItemsTable(currentBin); closeModal();
   showToast(`✅ "${name}" ditambahkan`);
 }
 
-let _editItemIndex = -1;
-function openEditItem(i){
-  _editItemIndex = i;
-  openModal('edititem');
-}
-
+let _editItemIndex=-1;
+function openEditItem(i){_editItemIndex=i;openModal('edititem');}
 function confirmEditItem(i){
-  const name = document.getElementById('ei-name').value.trim();
-  const qty  = parseInt(document.getElementById('ei-qty').value);
-  const unit = document.getElementById('ei-unit').value.trim();
-  if(!name){ showToast('⚠️ Nama barang tidak boleh kosong'); return; }
-  const it = currentBin.items[i];
-  it.name = name;
-  it.qty  = isNaN(qty) ? it.qty : qty;
-  it.unit = unit;
+  const name=document.getElementById('ei-name').value.trim();
+  const qty=parseInt(document.getElementById('ei-qty').value);
+  const unit=document.getElementById('ei-unit').value.trim();
+  if(!name){showToast('⚠️ Nama barang tidak boleh kosong');return;}
+  const it=currentBin.items[i];
+  it.name=name; it.qty=isNaN(qty)?it.qty:qty; it.unit=unit;
   saveState(); renderItemsTable(currentBin); closeModal();
   showToast(`✅ "${name}" diperbarui`);
 }
 
 function confirmEditBin(){
-  const cat   = document.getElementById('eb-cat').value.trim();
-  const rak   = document.getElementById('eb-rak').value.trim();
-  const kotak = document.getElementById('eb-kotak').value.trim();
-  if(!cat||!rak){ showToast('⚠️ Kategori dan Rak wajib diisi'); return; }
+  const cat=document.getElementById('eb-cat').value.trim();
+  const rak=document.getElementById('eb-rak').value.trim();
+  const kotak=document.getElementById('eb-kotak').value.trim();
+  if(!cat||!rak){showToast('⚠️ Kategori dan Rak wajib diisi');return;}
   currentBin.cat=cat; currentBin.rak=rak; currentBin.kotak=kotak;
   saveState(); renderBinHeader(currentBin); closeModal();
   showToast('✅ Bin diperbarui');
 }
 
 function confirmNewBin(){
-  const cat   = document.getElementById('nb-cat').value.trim();
-  const rak   = document.getElementById('nb-rak').value.trim();
-  const kotak = document.getElementById('nb-kotak').value.trim();
-  const id    = document.getElementById('nb-id').value.trim().toUpperCase();
-  if(!cat||!rak||!id){ showToast('⚠️ Semua field wajib diisi'); return; }
-  if(state.bins.find(b=>b.id===id)){ showToast('⚠️ Bin ID sudah ada'); return; }
-  const newBin = {id, cat, rak, kotak, items:[]};
-  state.bins.push(newBin);
-  saveState(); closeModal();
+  const cat=document.getElementById('nb-cat').value.trim();
+  const rak=document.getElementById('nb-rak').value.trim();
+  const kotak=document.getElementById('nb-kotak').value.trim();
+  const id=document.getElementById('nb-id').value.trim().toUpperCase();
+  if(!cat||!rak||!id){showToast('⚠️ Semua field wajib diisi');return;}
+  if(state.bins.find(b=>b.id===id)){showToast('⚠️ Bin ID sudah ada');return;}
+  const newBin={id,cat,rak,kotak,items:[]};
+  state.bins.push(newBin); saveState(); closeModal();
   showToast(`✅ Bin "${id}" dibuat`);
-  currentBin = newBin;
+  currentBin=newBin;
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-tabs button').forEach(b=>b.classList.remove('active'));
   document.getElementById('page-scan').classList.add('active');
   document.querySelector('.nav-tabs button').classList.add('active');
-  document.getElementById('scan-input').value = id;
-  loadBin(newBin);
+  document.getElementById('scan-input').value=id; loadBin(newBin);
 }
 
 function addHistory(type,bin,name,qty,unit,before,after,note){
+  if(!state.history)state.history=[];
   state.history.unshift({type,binId:bin.id,binCat:bin.cat,rak:bin.rak,kotak:bin.kotak,
-    name,qty,unit,before,after,note,ts:new Date().toISOString()});
-  if(state.history.length>300) state.history.pop();
+    name,qty,unit,before,after,note,user:currentUser?currentUser.username:'?',
+    ts:new Date().toISOString()});
+  if(state.history.length>500)state.history.pop();
 }
 
-/* ═══════════════════════════════════════════════
-   CONFIRM DIALOG (replaces window.confirm)
-═══════════════════════════════════════════════ */
-let _confirmCb = null;
-function openConfirm(title, msg, onYes){
-  _confirmCb = onYes;
-  document.getElementById('confirm-title').textContent = title;
-  document.getElementById('confirm-msg').textContent   = msg;
+/* ═══════════════════════════════════════════════════
+   CONFIRM DIALOG
+═══════════════════════════════════════════════════ */
+let _confirmCb=null;
+function openConfirm(title,msg,onYes){
+  _confirmCb=onYes;
+  document.getElementById('confirm-title').textContent=title;
+  document.getElementById('confirm-msg').textContent=msg;
   document.getElementById('confirm-overlay').classList.add('open');
 }
-function confirmYes(){
-  document.getElementById('confirm-overlay').classList.remove('open');
-  if(_confirmCb) _confirmCb();
-  _confirmCb = null;
-}
-function confirmNo(){
-  document.getElementById('confirm-overlay').classList.remove('open');
-  _confirmCb = null;
-}
+function confirmYes(){document.getElementById('confirm-overlay').classList.remove('open');if(_confirmCb)_confirmCb();_confirmCb=null;}
+function confirmNo(){document.getElementById('confirm-overlay').classList.remove('open');_confirmCb=null;}
 
 function deleteItem(i){
-  openConfirm(`Hapus "${currentBin.items[i].name}"?`, 'Barang akan dihapus dari bin ini.', ()=>{
-    currentBin.items.splice(i,1);
-    saveState(); renderItemsTable(currentBin);
-    showToast('🗑 Barang dihapus');
+  openConfirm(`Hapus "${currentBin.items[i].name}"?`,'Barang akan dihapus dari bin ini.',()=>{
+    currentBin.items.splice(i,1); saveState(); renderItemsTable(currentBin); showToast('🗑 Barang dihapus');
   });
 }
-
 function confirmDeleteBin(){
-  openConfirm(`Hapus bin "${currentBin.id}"?`,
-    'Semua data barang dalam bin ini akan hilang.', ()=>{
-    state.bins = state.bins.filter(b=>b.id!==currentBin.id);
-    saveState(); closeModal();
-    currentBin = null;
-    document.getElementById('bin-panel').style.display = 'none';
-    document.getElementById('scan-input').value = '';
+  openConfirm(`Hapus bin "${currentBin.id}"?`,'Semua data barang akan hilang.',()=>{
+    state.bins=state.bins.filter(b=>b.id!==currentBin.id);
+    saveState(); closeModal(); currentBin=null;
+    document.getElementById('bin-panel').style.display='none';
+    document.getElementById('scan-input').value='';
     showToast('🗑 Bin dihapus');
   });
 }
 
-/* ═══════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════
    BINS PAGE
-═══════════════════════════════════════════════ */
-let activeFilter = 'all';
-function renderBins(filter='', catFilter=activeFilter){
-  const cats = [...new Set(state.bins.map(b=>b.cat))];
-  document.getElementById('cat-pills').innerHTML =
-    `<span class="pill ${catFilter==='all'?'active':''}" onclick="setCat('all')">Semua</span>` +
-    cats.map(c=>`<span class="pill ${catFilter===c?'active':''}"
-      onclick="setCat('${c.replace(/'/g,"\\'")}')">${c.replace('Perlengkapan ','')}</span>`).join('');
-  const fl = filter.toLowerCase();
-  const list = state.bins.filter(b=>{
-    const catOk  = catFilter==='all' || b.cat===catFilter;
-    const srchOk = !fl || b.id.toLowerCase().includes(fl) ||
-                   b.cat.toLowerCase().includes(fl) ||
-                   b.items.some(it=>it.name.toLowerCase().includes(fl));
-    return catOk && srchOk;
+═══════════════════════════════════════════════════ */
+let activeFilter='all';
+function renderBins(filter='',catFilter=activeFilter){
+  const cats=[...new Set(state.bins.map(b=>b.cat))];
+  document.getElementById('cat-pills').innerHTML=
+    `<span class="pill ${catFilter==='all'?'active':''}" onclick="setCat('all')">Semua</span>`+
+    cats.map(c=>`<span class="pill ${catFilter===c?'active':''}" onclick="setCat('${c.replace(/'/g,"\\'")}')">
+      ${c.replace('Perlengkapan ','').replace('Persediaan Stock ','')}</span>`).join('');
+  const fl=filter.toLowerCase();
+  const list=state.bins.filter(b=>{
+    const catOk=catFilter==='all'||b.cat===catFilter;
+    const srchOk=!fl||b.id.toLowerCase().includes(fl)||b.cat.toLowerCase().includes(fl)||
+                  b.items.some(it=>it.name.toLowerCase().includes(fl));
+    return catOk&&srchOk;
   });
-  document.getElementById('bins-list').innerHTML = list.map(bin=>`
+  const admin=isAdmin();
+  document.getElementById('bins-list').innerHTML=list.map(bin=>`
     <div class="card" style="padding:0;overflow:hidden;margin-bottom:12px;">
       <div class="bin-header" onclick="goScanBin('${bin.id}')" style="cursor:pointer;">
         <div class="cat"><h3>${bin.cat}</h3><p>${bin.id}</p></div>
@@ -1051,173 +1184,137 @@ function renderBins(filter='', catFilter=activeFilter){
           <div class="rak-kotak">Kotak ${bin.kotak}</div>
         </div>
       </div>
-      <div style="padding:8px 14px;font-size:12px;color:#666;display:flex;align-items:center;gap:10px;">
+      <div style="padding:8px 14px;font-size:12px;color:#666;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
         <span style="flex:1;">📦 ${bin.items.length} items
-          ${bin.items.filter(i=>i.qty===0).length
-            ? `&nbsp;·&nbsp;<span style="color:var(--red)">⚠️ ${bin.items.filter(i=>i.qty===0).length} kosong</span>` : ''}
-          ${bin.items.filter(i=>i.qty>0&&i.qty<=2).length
-            ? `&nbsp;·&nbsp;<span style="color:orange">🟡 low</span>` : ''}
+          ${bin.items.filter(i=>i.qty===0).length?`&nbsp;·&nbsp;<span style="color:var(--red)">⚠️ ${bin.items.filter(i=>i.qty===0).length} kosong</span>`:''}
         </span>
-        <button onclick="quickAddItem('${bin.id}')"
-          style="padding:5px 12px;background:#FFF7E6;color:#B45309;
-                 border:1px solid #FDE68A;border-radius:6px;font-size:12px;
-                 font-weight:700;cursor:pointer;">➕ Tambah</button>
+        ${admin?`<button onclick="quickAddItem('${bin.id}')"
+          style="padding:5px 10px;background:#FFF7E6;color:#B45309;border:1px solid #FDE68A;
+                 border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;">➕</button>
         <button onclick="printStockCard('${bin.id}')"
-          style="padding:5px 12px;background:#F0FDF4;color:#166534;
-                 border:1px solid #BBF7D0;border-radius:6px;font-size:12px;
-                 font-weight:700;cursor:pointer;">🖨️ Print</button>
+          style="padding:5px 10px;background:#F0FDF4;color:#166534;border:1px solid #BBF7D0;
+                 border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;">🖨️</button>`:''}
         <button onclick="goScanBin('${bin.id}')"
-          style="padding:5px 12px;background:#EEF2FF;color:#3730A3;
-                 border:1px solid #C7D2FE;border-radius:6px;font-size:12px;
-                 font-weight:700;cursor:pointer;">📋 Buka</button>
+          style="padding:5px 10px;background:#EEF2FF;color:#3730A3;border:1px solid #C7D2FE;
+                 border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;">📋 Buka</button>
       </div>
-    </div>`).join('') || '<div class="empty">Tidak ada bin.</div>';
+    </div>`).join('')||'<div class="empty">Tidak ada bin.</div>';
 }
-function setCat(c){ activeFilter=c; renderBins(document.querySelector('.search-bar')?.value||''); }
-function filterBins(v){ renderBins(v, activeFilter); }
-function quickAddItem(binId){
-  const bin = state.bins.find(b=>b.id===binId);
-  if(!bin) return;
-  currentBin = bin;
-  openModal('additem');
-}
+function setCat(c){activeFilter=c;renderBins(document.querySelector('.search-bar')?.value||'');}
+function filterBins(v){renderBins(v,activeFilter);}
+function quickAddItem(binId){const bin=state.bins.find(b=>b.id===binId);if(!bin)return;currentBin=bin;openModal('additem');}
 function goScanBin(id){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-tabs button').forEach(b=>b.classList.remove('active'));
   document.getElementById('page-scan').classList.add('active');
   document.querySelector('.nav-tabs button').classList.add('active');
-  document.getElementById('scan-input').value = id;
-  scanBin();
+  document.getElementById('scan-input').value=id; scanBin();
 }
 
-/* ═══════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════
    HISTORY
-═══════════════════════════════════════════════ */
+═══════════════════════════════════════════════════ */
 function renderHistory(){
-  const icons = {out:'📤',in:'📥',opname:'🔢'};
-  const labels = {out:'Ambil',in:'Simpan',opname:'Opname'};
-  const el = document.getElementById('history-list');
-  if(!state.history.length){ el.innerHTML='<div class="empty">Belum ada transaksi.</div>'; return; }
-  el.innerHTML = state.history.map(h=>{
-    const d = new Date(h.ts);
-    const ts = d.toLocaleDateString('id-ID',{day:'2-digit',month:'short'}) + ' ' +
-               d.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
-    const q  = h.type==='opname'
-      ? `${h.before}→${h.after}`
-      : `${h.type==='out'?'-':'+'}${h.qty} ${h.unit}`;
+  const icons={out:'📤',in:'📥',opname:'🔢'};
+  const labels={out:'Ambil',in:'Simpan',opname:'Opname'};
+  const el=document.getElementById('history-list');
+  if(!state.history||!state.history.length){el.innerHTML='<div class="empty">Belum ada transaksi.</div>';return;}
+  el.innerHTML=state.history.map(h=>{
+    const d=new Date(h.ts);
+    const ts=d.toLocaleDateString('id-ID',{day:'2-digit',month:'short'})+' '+
+             d.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
+    const q=h.type==='opname'?`${h.before}→${h.after}`:`${h.type==='out'?'-':'+'}${h.qty} ${h.unit}`;
     return `<div class="history-item">
       <div class="hist-icon ${h.type}">${icons[h.type]}</div>
       <div class="hist-info">
         <div class="hist-name">${h.name}</div>
-        <div class="hist-meta">${labels[h.type]} · ${h.binCat} (Rak ${h.rak}) · ${ts}</div>
-        ${h.note?`<div class="hist-meta" style="font-style:italic;color:#bbb">${h.note}</div>`:''}
+        <div class="hist-meta">${labels[h.type]} · ${h.binCat} · ${ts}${h.user?' · '+h.user:''}</div>
+        ${h.note?`<div class="hist-meta" style="font-style:italic;color:#bbb;">${h.note}</div>`:''}
       </div>
       <div class="hist-qty ${h.type}">${q}</div>
     </div>`;
   }).join('');
 }
 
-/* ═══════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════
    DASHBOARD
-═══════════════════════════════════════════════ */
-let currentDrilldown = null;
-let txPeriod = 'today';
+═══════════════════════════════════════════════════ */
+let currentDrilldown=null,txPeriod='today';
 
 function renderDashboard(){
   closeDrilldown();
-  const all = state.bins.flatMap(b => b.items);
-  const zeroItems = all.filter(i => i.qty === 0);
-  const today = new Date();
-  const txToday = state.history.filter(h => isSameDay(new Date(h.ts), today));
-
-  document.getElementById('stats-grid').innerHTML = `
-    <div class="stat-card green" onclick="openDrilldown('bins')" style="cursor:pointer;">
-      <div class="stat-num">${state.bins.length}</div>
-      <div class="stat-label">Total Bins</div>
+  const all=state.bins.flatMap(b=>b.items);
+  const today=new Date();
+  const txToday=(state.history||[]).filter(h=>isSameDay(new Date(h.ts),today));
+  document.getElementById('stats-grid').innerHTML=`
+    <div class="stat-card green" onclick="openDrilldown('bins')">
+      <div class="stat-num">${state.bins.length}</div><div class="stat-label">Total Bins</div>
       <div style="font-size:11px;color:var(--teal);margin-top:6px;font-weight:600;">Lihat semua →</div>
     </div>
-    <div class="stat-card" onclick="openDrilldown('items')" style="cursor:pointer;">
-      <div class="stat-num">${all.length}</div>
-      <div class="stat-label">Total Barang</div>
+    <div class="stat-card" onclick="openDrilldown('items')">
+      <div class="stat-num">${all.length}</div><div class="stat-label">Total Barang</div>
       <div style="font-size:11px;color:var(--teal);margin-top:6px;font-weight:600;">Lihat semua →</div>
     </div>
-    <div class="stat-card red" onclick="openDrilldown('zero')" style="cursor:pointer;">
-      <div class="stat-num">${zeroItems.length}</div>
-      <div class="stat-label">Stok Habis</div>
+    <div class="stat-card red" onclick="openDrilldown('zero')">
+      <div class="stat-num">${all.filter(i=>i.qty===0).length}</div><div class="stat-label">Stok Habis</div>
       <div style="font-size:11px;color:var(--red);margin-top:6px;font-weight:600;">Lihat daftar →</div>
     </div>
-    <div class="stat-card gold" onclick="openDrilldown('tx')" style="cursor:pointer;">
-      <div class="stat-num">${txToday.length}</div>
-      <div class="stat-label">Transaksi Hari Ini</div>
+    <div class="stat-card gold" onclick="openDrilldown('tx')">
+      <div class="stat-num">${txToday.length}</div><div class="stat-label">Transaksi Hari Ini</div>
       <div style="font-size:11px;color:#B45309;margin-top:6px;font-weight:600;">Lihat detail →</div>
     </div>`;
-
-  const icons = {out:'📤',in:'📥',opname:'🔢'};
-  const recent = state.history.slice(0,8);
-  document.getElementById('dash-activity').innerHTML = recent.length
-    ? recent.map(h => {
+  const trendCard=document.getElementById('dash-trend-card');
+  if(trendCard)renderTrendCard();
+  const icons={out:'📤',in:'📥',opname:'🔢'};
+  const recent=(state.history||[]).slice(0,8);
+  document.getElementById('dash-activity').innerHTML=recent.length
+    ?recent.map(h=>{
         const d=new Date(h.ts);
         const ts=d.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
         return `<div class="history-item">
           <div class="hist-icon ${h.type}">${icons[h.type]}</div>
           <div class="hist-info">
             <div class="hist-name">${h.name}</div>
-            <div class="hist-meta">${h.binCat} · Rak ${h.rak} · ${ts}</div>
+            <div class="hist-meta">${h.binCat} · Rak ${h.rak} · ${ts}${h.user?' · '+h.user:''}</div>
           </div>
           <div class="hist-qty ${h.type}">${h.type==='out'?'-':h.type==='in'?'+':''}${h.qty} ${h.unit}</div>
         </div>`;}).join('')
-    : '<div class="empty">Belum ada aktivitas.</div>';
+    :'<div class="empty">Belum ada aktivitas.</div>';
 }
 
-function isSameDay(a, b){
-  return a.getDate()===b.getDate() && a.getMonth()===b.getMonth() && a.getFullYear()===b.getFullYear();
-}
+function isSameDay(a,b){return a.getDate()===b.getDate()&&a.getMonth()===b.getMonth()&&a.getFullYear()===b.getFullYear();}
 
 function openDrilldown(type){
-  currentDrilldown = type;
-  document.getElementById('dash-drilldown').style.display = 'block';
-  document.getElementById('dash-activity-card').style.display = 'none';
-  document.getElementById('dd-filter').style.display = type==='tx' ? 'block' : 'none';
-
-  const titles = {
-    bins:'📦 Semua Bins', items:'🗂 Semua Barang',
-    zero:'⚠️ Stok Habis', tx:'📋 Riwayat Transaksi'
-  };
-  document.getElementById('dd-title').textContent = titles[type];
-
+  currentDrilldown=type;
+  document.getElementById('dash-drilldown').style.display='block';
+  document.getElementById('dash-activity-card').style.display='none';
+  document.getElementById('dash-trend-card').style.display='none';
+  document.getElementById('dd-filter').style.display=type==='tx'?'block':'none';
+  const titles={bins:'📦 Semua Bins',items:'🗂 Semua Barang',zero:'⚠️ Stok Habis',tx:'📋 Riwayat Transaksi'};
+  document.getElementById('dd-title').textContent=titles[type];
   if(type==='tx'){
-    txPeriod = 'today';
-    // Reset pills
-    document.querySelectorAll('#dd-period-pills .pill').forEach((p,i)=>{
-      p.classList.toggle('active', i===0);
-    });
-    document.getElementById('dd-date-range').style.display = 'none';
+    txPeriod='today';
+    document.querySelectorAll('#dd-period-pills .pill').forEach((p,i)=>p.classList.toggle('active',i===0));
+    document.getElementById('dd-date-range').style.display='none';
     applyTxFilter();
-  } else {
-    renderDrilldownContent(type);
-  }
-  // scroll to drilldown
-  setTimeout(()=>document.getElementById('dash-drilldown')
-    .scrollIntoView({behavior:'smooth',block:'start'}), 80);
+  }else{renderDrilldownContent(type);}
+  setTimeout(()=>document.getElementById('dash-drilldown').scrollIntoView({behavior:'smooth',block:'start'}),80);
 }
 
 function closeDrilldown(){
-  currentDrilldown = null;
-  document.getElementById('dash-drilldown').style.display = 'none';
-  document.getElementById('dash-activity-card').style.display = 'block';
+  currentDrilldown=null;
+  document.getElementById('dash-drilldown').style.display='none';
+  document.getElementById('dash-activity-card').style.display='block';
+  document.getElementById('dash-trend-card').style.display='block';
 }
 
 function renderDrilldownContent(type){
-  const el = document.getElementById('dd-content');
-
-  if(type === 'bins'){
-    // List all bins, clickable to go to that bin
-    el.innerHTML = state.bins.map(bin => `
+  const el=document.getElementById('dd-content');
+  if(type==='bins'){
+    el.innerHTML=state.bins.map(bin=>`
       <div onclick="drillGoToBin('${bin.id}')"
-        style="display:flex;align-items:center;gap:12px;padding:10px 0;
-               border-bottom:1px solid #eee;cursor:pointer;">
-        <div style="background:var(--dark);color:#fff;border-radius:8px;
-                    padding:6px 10px;text-align:center;min-width:52px;">
+        style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #eee;cursor:pointer;">
+        <div style="background:var(--dark);color:#fff;border-radius:8px;padding:6px 10px;text-align:center;min-width:52px;">
           <div style="font-size:9px;color:var(--gold);font-weight:700;">RAK</div>
           <div style="font-size:16px;font-weight:800;line-height:1;">${bin.rak}</div>
           <div style="font-size:9px;color:var(--gold);">${bin.kotak}</div>
@@ -1227,175 +1324,126 @@ function renderDrilldownContent(type){
           <div style="font-size:11px;color:#888;margin-top:2px;">${bin.id} · ${bin.items.length} barang</div>
         </div>
         <div style="font-size:12px;color:var(--teal);font-weight:700;">Buka →</div>
-      </div>`).join('') || '<div class="empty">Tidak ada bin.</div>';
-
-  } else if(type === 'items'){
-    // Aggregate all items across all bins — group by name
-    const map = {};
-    state.bins.forEach(bin => {
-      bin.items.forEach(it => {
-        const key = it.name.toLowerCase().trim();
-        if(!map[key]) map[key] = {name:it.name, total:0, bins:[]};
-        map[key].total += it.qty;
-        map[key].bins.push({binId:bin.id, cat:bin.cat, rak:bin.rak, kotak:bin.kotak,
-                             qty:it.qty, unit:it.unit});
-      });
-    });
-    const sorted = Object.values(map).sort((a,b)=>a.name.localeCompare(b.name));
-    el.innerHTML = sorted.map(item => {
-      const multibin = item.bins.length > 1;
-      const binList = item.bins.map(b =>
-        `<div onclick="drillGoToBin('${b.binId}')"
-          style="display:flex;align-items:center;gap:8px;padding:5px 0 5px 16px;
-                 border-top:1px solid #f0f0f0;cursor:pointer;">
+      </div>`).join('')||'<div class="empty">Tidak ada bin.</div>';
+  }else if(type==='items'){
+    const map={};
+    state.bins.forEach(bin=>bin.items.forEach(it=>{
+      const k=it.name.toLowerCase().trim();
+      if(!map[k])map[k]={name:it.name,total:0,bins:[]};
+      map[k].total+=it.qty;
+      map[k].bins.push({binId:bin.id,cat:bin.cat,rak:bin.rak,kotak:bin.kotak,qty:it.qty,unit:it.unit});
+    }));
+    const sorted=Object.values(map).sort((a,b)=>a.name.localeCompare(b.name));
+    el.innerHTML=sorted.map(item=>{
+      const multi=item.bins.length>1;
+      const binList=item.bins.map(b=>`
+        <div onclick="drillGoToBin('${b.binId}')"
+          style="display:flex;align-items:center;gap:8px;padding:5px 0 5px 16px;border-top:1px solid #f0f0f0;cursor:pointer;">
           <div style="flex:1;font-size:12px;color:#666;">${b.cat} (Rak ${b.rak} Kotak ${b.kotak})</div>
-          <span style="font-size:12px;font-weight:700;color:${b.qty===0?'#999':b.qty<=2?'var(--red)':'var(--teal)'};">
-            ${b.qty} ${b.unit}</span>
+          <span style="font-size:12px;font-weight:700;color:${b.qty===0?'#999':b.qty<=2?'var(--red)':'var(--teal)'};">${b.qty} ${b.unit}</span>
           <span style="font-size:11px;color:var(--teal);">→</span>
         </div>`).join('');
       return `<div style="border-bottom:1px solid #eee;">
-        <div style="display:flex;align-items:center;gap:10px;padding:10px 0;"
-             onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'"
-             style="cursor:pointer;">
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 0;cursor:pointer;"
+             onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'">
           <div style="flex:1;">
             <div style="font-size:13px;font-weight:700;">${item.name}</div>
-            <div style="font-size:11px;color:#888;margin-top:2px;">${item.bins.length} bin${item.bins.length>1?' · klik untuk detail':''}</div>
+            <div style="font-size:11px;color:#888;margin-top:2px;">${item.bins.length} bin${multi?' · klik untuk detail':''}</div>
           </div>
           <span class="qty-badge ${item.total===0?'zero':item.total<=2?'low':''}">${item.total}</span>
-          ${multibin?`<span style="font-size:12px;color:#bbb;">▾</span>`:''}
+          ${multi?'<span style="font-size:12px;color:#bbb;">▾</span>':''}
         </div>
-        <div style="display:${multibin?'block':'none'}">${binList}</div>
+        <div style="display:${multi?'block':'none'}">${binList}</div>
       </div>`;
-    }).join('') || '<div class="empty">Tidak ada barang.</div>';
-
-  } else if(type === 'zero'){
-    // All items with qty=0 across all bins
-    const zeroList = [];
-    state.bins.forEach(bin => {
-      bin.items.forEach(it => {
-        if(it.qty === 0) zeroList.push({...it, binId:bin.id, cat:bin.cat, rak:bin.rak, kotak:bin.kotak});
-      });
-    });
-    el.innerHTML = zeroList.length
-      ? zeroList.map(it => `
+    }).join('')||'<div class="empty">Tidak ada barang.</div>';
+  }else if(type==='zero'){
+    const zeroList=[];
+    state.bins.forEach(bin=>bin.items.forEach(it=>{if(it.qty===0)zeroList.push({...it,binId:bin.id,cat:bin.cat,rak:bin.rak,kotak:bin.kotak});}));
+    el.innerHTML=zeroList.length
+      ?zeroList.map(it=>`
         <div onclick="drillGoToBin('${it.binId}')"
-          style="display:flex;align-items:center;gap:12px;padding:10px 0;
-                 border-bottom:1px solid #eee;cursor:pointer;">
+          style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #eee;cursor:pointer;">
           <span style="font-size:20px;">⚠️</span>
           <div style="flex:1;">
             <div style="font-size:13px;font-weight:700;">${it.name}</div>
-            <div style="font-size:11px;color:#888;margin-top:2px;">${it.cat} · Rak ${it.rak} Kotak ${it.kotak}</div>
+            <div style="font-size:11px;color:#888;">${it.cat} · Rak ${it.rak} Kotak ${it.kotak}</div>
           </div>
           <div style="text-align:right;">
             <span class="qty-badge zero">0</span>
             <div style="font-size:11px;color:var(--teal);margin-top:3px;">Buka →</div>
           </div>
         </div>`).join('')
-      : '<div class="empty">✅ Tidak ada stok yang habis!</div>';
+      :'<div class="empty">✅ Tidak ada stok yang habis!</div>';
   }
 }
 
 function drillGoToBin(id){
-  const bin = state.bins.find(b=>b.id===id);
-  if(!bin) return;
-  // Navigate to scan page and load bin
+  const bin=state.bins.find(b=>b.id===id);
+  if(!bin)return;
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-tabs button').forEach(b=>b.classList.remove('active'));
   document.getElementById('page-scan').classList.add('active');
   document.querySelector('.nav-tabs button').classList.add('active');
-  document.getElementById('scan-input').value = id;
-  loadBin(bin);
+  document.getElementById('scan-input').value=id; loadBin(bin);
 }
 
-/* Transaction drilldown with period filter */
-function setTxPeriod(period, el){
-  txPeriod = period;
+function setTxPeriod(period,el){
+  txPeriod=period;
   document.querySelectorAll('#dd-period-pills .pill').forEach(p=>p.classList.remove('active'));
   el.classList.add('active');
-  const rangeEl = document.getElementById('dd-date-range');
-  if(period === 'custom'){
-    rangeEl.style.display = 'flex';
-    // default to today
-    const today = new Date().toISOString().split('T')[0];
-    document.getElementById('dd-date-from').value = today;
-    document.getElementById('dd-date-to').value   = today;
-  } else {
-    rangeEl.style.display = 'none';
-  }
+  const rangeEl=document.getElementById('dd-date-range');
+  if(period==='custom'){
+    rangeEl.style.display='flex';
+    const today=new Date().toISOString().split('T')[0];
+    document.getElementById('dd-date-from').value=today;
+    document.getElementById('dd-date-to').value=today;
+  }else{rangeEl.style.display='none';}
   applyTxFilter();
 }
 
 function applyTxFilter(){
-  const now = new Date();
+  const now=new Date();
+  const hist=state.history||[];
   let filtered;
-
-  if(txPeriod === 'today'){
-    filtered = state.history.filter(h => isSameDay(new Date(h.ts), now));
-  } else if(txPeriod === 'week'){
-    const start = new Date(now);
-    start.setDate(now.getDate() - now.getDay());
-    start.setHours(0,0,0,0);
-    filtered = state.history.filter(h => new Date(h.ts) >= start);
-  } else if(txPeriod === 'month'){
-    filtered = state.history.filter(h => {
-      const d = new Date(h.ts);
-      return d.getMonth()===now.getMonth() && d.getFullYear()===now.getFullYear();
-    });
-  } else if(txPeriod === 'custom'){
-    const from = document.getElementById('dd-date-from').value;
-    const to   = document.getElementById('dd-date-to').value;
-    if(!from || !to) return;
-    const fromD = new Date(from + 'T00:00:00');
-    const toD   = new Date(to   + 'T23:59:59');
-    filtered = state.history.filter(h => {
-      const d = new Date(h.ts);
-      return d >= fromD && d <= toD;
-    });
-  } else {
-    filtered = state.history;
-  }
-
-  const el = document.getElementById('dd-content');
-  const icons = {out:'📤',in:'📥',opname:'🔢'};
-  const labels = {out:'Ambil',in:'Simpan',opname:'Opname'};
-
-  if(!filtered.length){
-    el.innerHTML = '<div class="empty">Tidak ada transaksi pada periode ini.</div>';
-    return;
-  }
-
-  // Summary row
-  const outCount = filtered.filter(h=>h.type==='out').length;
-  const inCount  = filtered.filter(h=>h.type==='in').length;
-  const opCount  = filtered.filter(h=>h.type==='opname').length;
-
-  el.innerHTML = `
+  if(txPeriod==='today'){filtered=hist.filter(h=>isSameDay(new Date(h.ts),now));}
+  else if(txPeriod==='week'){const s=new Date(now);s.setDate(now.getDate()-now.getDay());s.setHours(0,0,0,0);filtered=hist.filter(h=>new Date(h.ts)>=s);}
+  else if(txPeriod==='month'){filtered=hist.filter(h=>{const d=new Date(h.ts);return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();});}
+  else if(txPeriod==='custom'){
+    const from=document.getElementById('dd-date-from').value;
+    const to=document.getElementById('dd-date-to').value;
+    if(!from||!to)return;
+    const fromD=new Date(from+'T00:00:00'),toD=new Date(to+'T23:59:59');
+    filtered=hist.filter(h=>{const d=new Date(h.ts);return d>=fromD&&d<=toD;});
+  }else{filtered=hist;}
+  const el=document.getElementById('dd-content');
+  const icons={out:'📤',in:'📥',opname:'🔢'};
+  const labels={out:'Ambil',in:'Simpan',opname:'Opname'};
+  if(!filtered.length){el.innerHTML='<div class="empty">Tidak ada transaksi pada periode ini.</div>';return;}
+  const outC=filtered.filter(h=>h.type==='out').length;
+  const inC=filtered.filter(h=>h.type==='in').length;
+  const opC=filtered.filter(h=>h.type==='opname').length;
+  el.innerHTML=`
     <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
       <div style="flex:1;min-width:70px;background:#FEE2E2;border-radius:8px;padding:8px;text-align:center;">
-        <div style="font-size:18px;font-weight:800;color:var(--red);">${outCount}</div>
-        <div style="font-size:11px;color:#888;">Ambil</div>
+        <div style="font-size:18px;font-weight:800;color:var(--red);">${outC}</div><div style="font-size:11px;color:#888;">Ambil</div>
       </div>
       <div style="flex:1;min-width:70px;background:#D1FAE5;border-radius:8px;padding:8px;text-align:center;">
-        <div style="font-size:18px;font-weight:800;color:#065F46;">${inCount}</div>
-        <div style="font-size:11px;color:#888;">Simpan</div>
+        <div style="font-size:18px;font-weight:800;color:#065F46;">${inC}</div><div style="font-size:11px;color:#888;">Simpan</div>
       </div>
       <div style="flex:1;min-width:70px;background:#EEF2FF;border-radius:8px;padding:8px;text-align:center;">
-        <div style="font-size:18px;font-weight:800;color:#3730A3;">${opCount}</div>
-        <div style="font-size:11px;color:#888;">Opname</div>
+        <div style="font-size:18px;font-weight:800;color:#3730A3;">${opC}</div><div style="font-size:11px;color:#888;">Opname</div>
       </div>
-    </div>` +
-    filtered.map(h => {
-      const d = new Date(h.ts);
-      const ts = d.toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'}) + ' ' +
-                 d.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
-      const q = h.type==='opname'
-        ? `${h.before}→${h.after}`
-        : `${h.type==='out'?'-':'+'}${h.qty} ${h.unit}`;
+    </div>`+
+    filtered.map(h=>{
+      const d=new Date(h.ts);
+      const ts=d.toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'})+' '+
+               d.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
+      const q=h.type==='opname'?`${h.before}→${h.after}`:`${h.type==='out'?'-':'+'}${h.qty} ${h.unit}`;
       return `<div class="history-item" onclick="drillGoToBin('${h.binId}')" style="cursor:pointer;">
         <div class="hist-icon ${h.type}">${icons[h.type]}</div>
         <div class="hist-info">
           <div class="hist-name">${h.name}</div>
-          <div class="hist-meta">${labels[h.type]} · ${h.binCat} · Rak ${h.rak} · ${ts}</div>
+          <div class="hist-meta">${labels[h.type]} · ${h.binCat} · ${ts}${h.user?' · '+h.user:''}</div>
           ${h.note?`<div class="hist-meta" style="font-style:italic;color:#bbb;">${h.note}</div>`:''}
         </div>
         <div class="hist-qty ${h.type}">${q}</div>
@@ -1403,22 +1451,113 @@ function applyTxFilter(){
     }).join('');
 }
 
+/* ═══════════════════════════════════════════════════
+   TREND CHART
+═══════════════════════════════════════════════════ */
+let trendDays=7,trendMode='daily';
+function setTrendPeriod(days,el){trendDays=days;document.querySelectorAll('[id^="trend-pill-"]').forEach(p=>p.classList.remove('active'));el.classList.add('active');renderTrendCard();}
+function setTrendMode(mode,el){trendMode=mode;document.querySelectorAll('[id^="trend-mode-"]').forEach(p=>p.classList.remove('active'));el.classList.add('active');renderTrendCard();}
 
-/* ═══════════════════════════════════════════════
-   STOCK CARD PRINT
-═══════════════════════════════════════════════ */
+function renderTrendCard(){
+  const el=document.getElementById('trend-chart');
+  if(!el)return;
+  const now=new Date(),from=new Date(now);
+  from.setDate(now.getDate()-trendDays+1);from.setHours(0,0,0,0);
+  const txs=(state.history||[]).filter(h=>h.type==='out'&&new Date(h.ts)>=from);
+  if(!txs.length){el.innerHTML='<div class="empty" style="padding:20px;">Belum ada data konsumsi.<br><small>Data muncul setelah ada transaksi AMBIL.</small></div>';return;}
+  if(trendMode==='daily')renderDailyChart(el,txs,from,now);
+  else if(trendMode==='item')renderTopItemsChart(el,txs);
+  else renderCategoryChart(el,txs);
+}
+
+function renderDailyChart(el,txs,from,now){
+  const days=[],cur=new Date(from);
+  while(cur<=now){days.push(new Date(cur));cur.setDate(cur.getDate()+1);}
+  const buckets=days.map(d=>({
+    label:d.toLocaleDateString('id-ID',{day:'2-digit',month:'short'}),
+    count:txs.filter(h=>isSameDay(new Date(h.ts),d)).reduce((s,h)=>s+(h.qty||0),0)
+  }));
+  const max=Math.max(...buckets.map(b=>b.count),1);
+  const todayLabel=now.toLocaleDateString('id-ID',{day:'2-digit',month:'short'});
+  el.innerHTML=`
+    <div style="font-size:11px;color:#888;margin-bottom:8px;">Unit diambil per hari</div>
+    <div style="display:flex;align-items:flex-end;gap:${trendDays<=7?'8':'4'}px;height:120px;padding-bottom:4px;overflow-x:auto;">
+      ${buckets.map(b=>{
+        const pct=Math.round((b.count/max)*100);
+        const isToday=b.label===todayLabel;
+        return `<div style="display:flex;flex-direction:column;align-items:center;flex:1;min-width:${trendDays<=7?'32':'20'}px;gap:3px;">
+          <div style="font-size:10px;font-weight:700;color:${b.count?'#1B2A3B':'#ccc'};">${b.count||''}</div>
+          <div style="width:100%;background:${isToday?'#E8B84B':'#048A81'};border-radius:4px 4px 0 0;
+               height:${Math.max(pct,b.count?4:0)}%;min-height:${b.count?'4px':'1px'};opacity:${b.count?1:.15};"></div>
+          <div style="font-size:9px;color:#888;text-align:center;white-space:nowrap;">${b.label}</div>
+        </div>`;
+      }).join('')}
+    </div>${renderTrendSummary(txs)}`;
+}
+
+function renderTopItemsChart(el,txs){
+  const map={};txs.forEach(h=>{map[h.name]=(map[h.name]||0)+(h.qty||0);});
+  const sorted=Object.entries(map).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  const max=sorted[0]?.[1]||1;
+  el.innerHTML=`<div style="font-size:11px;color:#888;margin-bottom:10px;">Top barang paling banyak diambil</div>`+
+    sorted.map(([name,count])=>`
+      <div style="margin-bottom:8px;">
+        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px;">
+          <span style="font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:75%;">${name}</span>
+          <span style="font-weight:800;color:var(--teal);margin-left:8px;">${count}</span>
+        </div>
+        <div style="background:#f0f0f0;border-radius:4px;height:8px;">
+          <div style="background:var(--teal);border-radius:4px;height:8px;width:${Math.round((count/max)*100)}%;"></div>
+        </div>
+      </div>`).join('')+renderTrendSummary(txs);
+}
+
+function renderCategoryChart(el,txs){
+  const map={};txs.forEach(h=>{const k=h.binCat||'Lainnya';map[k]=(map[k]||0)+(h.qty||0);});
+  const sorted=Object.entries(map).sort((a,b)=>b[1]-a[1]);
+  const total=sorted.reduce((s,[,v])=>s+v,0)||1;
+  const palette=['#048A81','#2E4057','#E8B84B','#E05252','#3CB371','#3730A3','#0369A1','#B45309','#6B7280','#9333EA'];
+  el.innerHTML=`<div style="font-size:11px;color:#888;margin-bottom:10px;">Konsumsi per kategori bin</div>
+    <div style="display:flex;height:16px;border-radius:8px;overflow:hidden;margin-bottom:12px;gap:2px;">
+      ${sorted.map(([,v],i)=>`<div style="background:${palette[i%10]};width:${((v/total)*100).toFixed(1)}%;min-width:2px;"></div>`).join('')}
+    </div>`+
+    sorted.map(([name,count],i)=>`
+      <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #f5f5f5;">
+        <div style="width:10px;height:10px;border-radius:2px;flex-shrink:0;background:${palette[i%10]};"></div>
+        <div style="flex:1;font-size:12px;">${name.replace('Perlengkapan ','').replace('Persediaan Stock ','')}</div>
+        <div style="font-size:12px;font-weight:700;">${count}</div>
+        <div style="font-size:11px;color:#888;width:34px;text-align:right;">${((count/total)*100).toFixed(0)}%</div>
+      </div>`).join('')+renderTrendSummary(txs);
+}
+
+function renderTrendSummary(txs){
+  const totalQty=txs.reduce((s,h)=>s+(h.qty||0),0);
+  const uniqueItems=new Set(txs.map(h=>h.name)).size;
+  const activeDays=new Set(txs.map(h=>new Date(h.ts).toDateString())).size;
+  return `<div style="display:flex;gap:8px;margin-top:12px;padding-top:10px;border-top:1px solid #f0f0f0;">
+    <div style="flex:1;text-align:center;background:#f7f7f7;border-radius:8px;padding:8px;">
+      <div style="font-size:18px;font-weight:800;color:var(--teal);">${totalQty}</div>
+      <div style="font-size:10px;color:#888;">Unit Diambil</div>
+    </div>
+    <div style="flex:1;text-align:center;background:#f7f7f7;border-radius:8px;padding:8px;">
+      <div style="font-size:18px;font-weight:800;color:#3730A3;">${uniqueItems}</div>
+      <div style="font-size:10px;color:#888;">Jenis Barang</div>
+    </div>
+    <div style="flex:1;text-align:center;background:#f7f7f7;border-radius:8px;padding:8px;">
+      <div style="font-size:18px;font-weight:800;color:#B45309;">${activeDays}</div>
+      <div style="font-size:10px;color:#888;">Hari Aktif</div>
+    </div>
+  </div>`;
+}
+
+/* ═══════════════════════════════════════════════════
+   PRINT STOCK CARD
+═══════════════════════════════════════════════════ */
 function printStockCard(binId){
-  const bin = state.bins.find(b => b.id === binId);
-  if(!bin){ showToast('Bin tidak ditemukan'); return; }
-
-  const now = new Date().toLocaleDateString('id-ID',{
-    day:'2-digit', month:'long', year:'numeric'
-  });
-
-  // Build QR-like text representation of bin ID (for printed label)
-  const MAX_ROWS = Math.max(bin.items.length, 5); // at least 5 blank rows
-
-  const itemRows = bin.items.map((it, i) => `
+  const bin=state.bins.find(b=>b.id===binId);
+  if(!bin){showToast('Bin tidak ditemukan');return;}
+  const now=new Date().toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'});
+  const itemRows=bin.items.map((it,i)=>`
     <tr>
       <td style="padding:7px 8px;text-align:center;font-size:12px;border:1px solid #ddd;color:#555;">${i+1}</td>
       <td style="padding:7px 8px;font-size:12px;border:1px solid #ddd;font-weight:600;">${it.name}</td>
@@ -1427,9 +1566,7 @@ function printStockCard(binId){
       <td style="padding:7px 8px;text-align:center;font-size:11px;border:1px solid #ddd;color:#888;">${it.unit}</td>
       <td style="padding:7px 8px;border:1px solid #ddd;"></td>
     </tr>`).join('');
-
-  // Add blank rows for handwriting new items
-  const blankRows = Array.from({length: Math.max(3, 8 - bin.items.length)}, (_,i) => `
+  const blankRows=Array.from({length:Math.max(3,8-bin.items.length)},(_,i)=>`
     <tr>
       <td style="padding:7px 8px;text-align:center;font-size:12px;border:1px solid #ddd;color:#ccc;">${bin.items.length+i+1}</td>
       <td style="padding:7px 8px;border:1px solid #ddd;"></td>
@@ -1437,108 +1574,71 @@ function printStockCard(binId){
       <td style="padding:7px 8px;border:1px solid #ddd;"></td>
       <td style="padding:7px 8px;border:1px solid #ddd;"></td>
     </tr>`).join('');
-
-  const card = `
-    <div id="printable-card" style="font-family:'Segoe UI',Arial,sans-serif;width:100%;max-width:380px;margin:0 auto;">
-
-      <!-- HEADER -->
-      <div style="display:flex;border-radius:10px 10px 0 0;overflow:hidden;border:2px solid #1B2A3B;">
-        <!-- Left: category + bin ID -->
-        <div style="flex:1;background:#1B2A3B;padding:12px 14px;">
-          <div style="font-size:8px;color:#E8B84B;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;">STOCK CARD</div>
-          <div style="font-size:13px;font-weight:800;color:#fff;line-height:1.3;">${bin.cat.toUpperCase()}</div>
-          <div style="font-size:9px;color:#94a3b8;margin-top:4px;">${bin.id}</div>
-        </div>
-        <!-- Right: RAK box -->
-        <div style="background:#2E4057;min-width:72px;display:flex;flex-direction:column;
-                    align-items:center;justify-content:center;border-left:2px solid #048A81;padding:8px;">
-          <div style="font-size:9px;color:#E8B84B;font-weight:700;letter-spacing:1px;">RAK</div>
-          <div style="font-size:26px;font-weight:900;color:#fff;line-height:1;">${bin.rak}</div>
-          <div style="font-size:9px;color:#E8B84B;font-weight:600;">Kotak ${bin.kotak}</div>
-        </div>
+  const card=`<div id="printable-card" style="font-family:'Segoe UI',Arial,sans-serif;width:100%;max-width:380px;margin:0 auto;">
+    <div style="display:flex;border-radius:10px 10px 0 0;overflow:hidden;border:2px solid #1B2A3B;">
+      <div style="flex:1;background:#1B2A3B;padding:12px 14px;">
+        <div style="font-size:8px;color:#E8B84B;font-weight:700;letter-spacing:1px;margin-bottom:4px;">STOCK CARD</div>
+        <div style="font-size:13px;font-weight:800;color:#fff;line-height:1.3;">${bin.cat.toUpperCase()}</div>
+        <div style="font-size:9px;color:#94a3b8;margin-top:4px;">${bin.id}</div>
       </div>
-
-      <!-- BIN ID STRIP -->
-      <div style="background:#F7F7F7;border-left:2px solid #1B2A3B;border-right:2px solid #1B2A3B;
-                  padding:5px 12px;display:flex;align-items:center;gap:8px;">
-        <span style="font-size:9px;font-weight:700;color:#048A81;text-transform:uppercase;letter-spacing:.8px;">Storage Bin ID</span>
-        <span style="font-size:11px;font-weight:800;color:#1B2A3B;">${bin.id}</span>
-        <span style="margin-left:auto;font-size:9px;color:#aaa;">Dicetak: ${now}</span>
+      <div style="background:#2E4057;min-width:72px;display:flex;flex-direction:column;
+                  align-items:center;justify-content:center;border-left:2px solid #048A81;padding:8px;">
+        <div style="font-size:9px;color:#E8B84B;font-weight:700;">RAK</div>
+        <div style="font-size:26px;font-weight:900;color:#fff;line-height:1;">${bin.rak}</div>
+        <div style="font-size:9px;color:#E8B84B;">Kotak ${bin.kotak}</div>
       </div>
-
-      <!-- ITEMS TABLE -->
-      <table style="width:100%;border-collapse:collapse;border:2px solid #1B2A3B;border-top:none;">
-        <thead>
-          <tr style="background:#048A81;">
-            <th style="padding:7px 8px;text-align:center;font-size:10px;color:#fff;font-weight:700;
-                       border:1px solid rgba(255,255,255,.2);width:28px;">#</th>
-            <th style="padding:7px 8px;text-align:left;font-size:10px;color:#fff;font-weight:700;
-                       border:1px solid rgba(255,255,255,.2);">Nama Barang</th>
-            <th style="padding:7px 8px;text-align:center;font-size:10px;color:#fff;font-weight:700;
-                       border:1px solid rgba(255,255,255,.2);width:42px;">Qty</th>
-            <th style="padding:7px 8px;text-align:center;font-size:10px;color:#fff;font-weight:700;
-                       border:1px solid rgba(255,255,255,.2);width:42px;">Unit</th>
-            <th style="padding:7px 8px;text-align:center;font-size:10px;color:#fff;font-weight:700;
-                       border:1px solid rgba(255,255,255,.2);width:60px;">Cek Stok</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${itemRows}
-          ${blankRows}
-        </tbody>
-      </table>
-
-      <!-- FOOTER -->
-      <div style="background:#1B2A3B;border:2px solid #1B2A3B;border-top:none;border-radius:0 0 10px 10px;
-                  padding:8px 14px;display:flex;justify-content:space-between;align-items:center;">
-        <span style="font-size:9px;color:#94a3b8;">RumahStock · Inventory Management</span>
-        <span style="font-size:9px;color:#E8B84B;font-weight:600;">📦 ${bin.items.length} items</span>
-      </div>
-
-      <!-- INSTRUCTIONS -->
-      <div style="margin-top:10px;padding:8px 10px;background:#FFF7E6;border-radius:6px;
-                  border:1px solid #FDE68A;font-size:10px;color:#92400E;">
-        <strong>Cara penggunaan:</strong> Letakkan kartu ini di dalam atau di depan bin.
-        Isi kolom <em>Cek Stok</em> saat melakukan pengecekan. Perbarui qty jika ada perubahan.
-      </div>
-    </div>`;
-
-  document.getElementById('stock-card-preview').innerHTML = card;
-  document.getElementById('print-overlay').style.display = 'flex';
+    </div>
+    <div style="background:#F7F7F7;border-left:2px solid #1B2A3B;border-right:2px solid #1B2A3B;
+                padding:5px 12px;display:flex;align-items:center;gap:8px;">
+      <span style="font-size:9px;font-weight:700;color:#048A81;text-transform:uppercase;letter-spacing:.8px;">Storage Bin ID</span>
+      <span style="font-size:11px;font-weight:800;color:#1B2A3B;">${bin.id}</span>
+      <span style="margin-left:auto;font-size:9px;color:#aaa;">Dicetak: ${now}</span>
+    </div>
+    <table style="width:100%;border-collapse:collapse;border:2px solid #1B2A3B;border-top:none;">
+      <thead>
+        <tr style="background:#048A81;">
+          <th style="padding:7px 8px;text-align:center;font-size:10px;color:#fff;font-weight:700;border:1px solid rgba(255,255,255,.2);width:28px;">#</th>
+          <th style="padding:7px 8px;text-align:left;font-size:10px;color:#fff;font-weight:700;border:1px solid rgba(255,255,255,.2);">Nama Barang</th>
+          <th style="padding:7px 8px;text-align:center;font-size:10px;color:#fff;font-weight:700;border:1px solid rgba(255,255,255,.2);width:42px;">Qty</th>
+          <th style="padding:7px 8px;text-align:center;font-size:10px;color:#fff;font-weight:700;border:1px solid rgba(255,255,255,.2);width:42px;">Unit</th>
+          <th style="padding:7px 8px;text-align:center;font-size:10px;color:#fff;font-weight:700;border:1px solid rgba(255,255,255,.2);width:60px;">Cek Stok</th>
+        </tr>
+      </thead>
+      <tbody>${itemRows}${blankRows}</tbody>
+    </table>
+    <div style="background:#1B2A3B;border:2px solid #1B2A3B;border-top:none;border-radius:0 0 10px 10px;
+                padding:8px 14px;display:flex;justify-content:space-between;align-items:center;">
+      <span style="font-size:9px;color:#94a3b8;">RumahStock · Home Inventory</span>
+      <span style="font-size:9px;color:#E8B84B;font-weight:600;">📦 ${bin.items.length} items</span>
+    </div>
+    <div style="margin-top:10px;padding:8px 10px;background:#FFF7E6;border-radius:6px;border:1px solid #FDE68A;font-size:10px;color:#92400E;">
+      <strong>Cara penggunaan:</strong> Letakkan kartu ini di dalam atau di depan bin. Isi kolom Cek Stok saat pengecekan.
+    </div>
+  </div>`;
+  document.getElementById('stock-card-preview').innerHTML=card;
+  document.getElementById('print-overlay').style.display='flex';
 }
-
-function closePrintOverlay(){
-  document.getElementById('print-overlay').style.display = 'none';
-}
-
+function closePrintOverlay(){document.getElementById('print-overlay').style.display='none';}
 function triggerPrint(){
-  const card = document.getElementById('printable-card');
-  if(!card){ showToast('Kartu tidak ditemukan'); return; }
-
-  const printWin = window.open('','_blank','width=500,height=700');
-  printWin.document.write(`<!DOCTYPE html><html><head>
-    <meta charset="UTF-8"/>
-    <title>Stock Card</title>
-    <style>
-      body { margin: 16px; font-family: 'Segoe UI', Arial, sans-serif; }
-      @media print {
-        body { margin: 8mm; }
-        @page { margin: 8mm; size: A5 portrait; }
-      }
-    </style>
-  </head><body>${card.outerHTML}
-    <scr'+'ipt>window.onload=function(){window.print();}</scr'+'ipt>
-  </body></html>`);
-  printWin.document.close();
+  const card=document.getElementById('printable-card');
+  if(!card){showToast('Kartu tidak ditemukan');return;}
+  const w=window.open('','_blank','width=500,height=700');
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>Stock Card</title>
+    <style>body{margin:16px;font-family:'Segoe UI',Arial,sans-serif;}
+    @media print{body{margin:8mm;}@page{margin:8mm;size:A5 portrait;}}</style>
+    </head><body>${card.outerHTML}<scr`+`ipt>window.onload=function(){window.print();}<\/scr`+`ipt></body></html>`);
+  w.document.close();
 }
 
-
+/* ═══════════════════════════════════════════════════
+   TOAST
+═══════════════════════════════════════════════════ */
 let toastTimer;
 function showToast(msg){
-  const t = document.getElementById('toast');
-  t.textContent = msg; t.classList.add('show');
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(()=>t.classList.remove('show'), 2800);
+  toastTimer=setTimeout(()=>t.classList.remove('show'),2800);
 }
 </script>
 </body>

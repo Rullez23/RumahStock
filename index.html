@@ -5,15 +5,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
 <title>RumahStock</title>
 <style>
-:root {
-  --dark:#1B2A3B; --mid:#2E4057; --teal:#048A81; --teal2:#06B8AD;
-  --gold:#E8B84B; --light:#EAF4F4; --lgray:#F7F7F7; --gray:#BBBBBB;
-  --red:#E05252; --green:#3CB371; --white:#FFFFFF; --text:#1B2A3B;
+:root{
+  --dark:#1B2A3B;--mid:#2E4057;--teal:#048A81;--gold:#E8B84B;
+  --light:#EAF4F4;--lgray:#F7F7F7;--gray:#BBBBBB;
+  --red:#E05252;--green:#3CB371;--white:#FFFFFF;--text:#1B2A3B;
 }
 *{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',sans-serif;-webkit-tap-highlight-color:transparent;}
 body{background:#f0f4f7;color:var(--text);min-height:100vh;overscroll-behavior:none;}
 
-/* ── NAV ── */
+/* NAV */
 nav{background:var(--dark);color:#fff;display:flex;align-items:center;
     justify-content:space-between;padding:0 12px;height:54px;
     position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.3);}
@@ -26,277 +26,201 @@ nav{background:var(--dark);color:#fff;display:flex;align-items:center;
 .nav-tabs button .nav-icon{font-size:16px;}
 .nav-tabs button.active,.nav-tabs button:hover{background:var(--teal);color:#fff;}
 
-/* ── PAGES ── */
+/* PAGES */
 .page{display:none;padding:14px;max-width:900px;margin:0 auto;}
 .page.active{display:block;}
 
-/* ══════════════════════════════════════════════════════
-   CAMERA SCANNER
-══════════════════════════════════════════════════════ */
-#scanner-modal{
-  display:none;position:fixed;inset:0;z-index:300;
-  background:#000;flex-direction:column;align-items:center;justify-content:center;
-}
+/* CAMERA MODAL */
+#scanner-modal{display:none;position:fixed;inset:0;z-index:300;background:#000;
+    flex-direction:column;align-items:center;justify-content:center;}
 #scanner-modal.open{display:flex;}
-
-/* live video fills screen */
-#cam-video{
-  position:absolute;inset:0;width:100%;height:100%;
-  object-fit:cover;
-}
-#cam-canvas{display:none;}/* offscreen decode canvas */
-
-/* dark vignette overlay */
-.cam-overlay{
-  position:absolute;inset:0;pointer-events:none;
-  background: radial-gradient(ellipse 55% 45% at 50% 48%, transparent 60%, rgba(0,0,0,.72) 100%);
-}
-
-/* aiming frame */
-.cam-frame{
-  position:absolute;
-  width:220px;height:220px;
-  top:50%;left:50%;transform:translate(-50%,-54%);
-  border-radius:16px;
-  box-shadow:0 0 0 9999px rgba(0,0,0,.5);
-}
-.cam-frame::before,.cam-frame::after,
-.cam-corner-br,.cam-corner-bl{
-  content:'';position:absolute;width:36px;height:36px;
-  border-color:var(--gold);border-style:solid;border-radius:4px;
-}
+#cam-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
+#cam-canvas{display:none;}
+.cam-overlay{position:absolute;inset:0;pointer-events:none;
+    background:radial-gradient(ellipse 55% 45% at 50% 48%,transparent 60%,rgba(0,0,0,.72) 100%);}
+.cam-frame{position:absolute;width:220px;height:220px;top:50%;left:50%;
+    transform:translate(-50%,-54%);border-radius:16px;
+    box-shadow:0 0 0 9999px rgba(0,0,0,.5);}
+.cam-frame::before,.cam-frame::after,.cam-corner-br,.cam-corner-bl{
+    content:'';position:absolute;width:36px;height:36px;
+    border-color:var(--gold);border-style:solid;border-radius:4px;}
 .cam-frame::before{top:-2px;left:-2px;border-width:3px 0 0 3px;}
-.cam-frame::after {top:-2px;right:-2px;border-width:3px 3px 0 0;}
+.cam-frame::after{top:-2px;right:-2px;border-width:3px 3px 0 0;}
 .cam-corner-br{bottom:-2px;right:-2px;border-width:0 3px 3px 0;}
 .cam-corner-bl{bottom:-2px;left:-2px;border-width:0 0 3px 3px;}
-
-/* scanning laser line */
 @keyframes laser{0%{top:8px;opacity:1}50%{opacity:.6}100%{top:calc(100% - 8px);opacity:1}}
-.cam-laser{
-  position:absolute;left:8px;right:8px;height:2px;
-  background:linear-gradient(90deg,transparent,var(--gold),var(--teal),var(--gold),transparent);
-  border-radius:2px;box-shadow:0 0 8px var(--gold);
-  animation:laser 2s ease-in-out infinite;
-}
-
-/* success flash */
+.cam-laser{position:absolute;left:8px;right:8px;height:2px;
+    background:linear-gradient(90deg,transparent,var(--gold),var(--teal),var(--gold),transparent);
+    border-radius:2px;box-shadow:0 0 8px var(--gold);animation:laser 2s ease-in-out infinite;}
 @keyframes flash{0%{opacity:0}30%{opacity:.7}100%{opacity:0}}
-.cam-flash{
-  position:absolute;inset:0;background:rgba(4,138,129,.35);
-  pointer-events:none;opacity:0;border-radius:16px;
-}
+.cam-flash{position:absolute;inset:0;background:rgba(4,138,129,.35);
+    pointer-events:none;opacity:0;border-radius:16px;}
 .cam-flash.go{animation:flash .5s ease forwards;}
-
-/* instruction text */
-.cam-hint{
-  position:absolute;bottom:26%;left:0;right:0;
-  text-align:center;color:rgba(255,255,255,.85);font-size:14px;font-weight:600;
-  text-shadow:0 1px 4px rgba(0,0,0,.8);letter-spacing:.3px;
-}
+.cam-hint{position:absolute;bottom:26%;left:0;right:0;
+    text-align:center;color:rgba(255,255,255,.85);font-size:14px;font-weight:600;
+    text-shadow:0 1px 4px rgba(0,0,0,.8);}
 .cam-hint small{display:block;font-size:11px;color:rgba(255,255,255,.5);margin-top:4px;font-weight:400;}
-
-/* close / torch buttons */
-.cam-btns{
-  position:absolute;bottom:40px;left:0;right:0;
-  display:flex;justify-content:center;gap:16px;
-}
-.cam-btn{
-  background:rgba(255,255,255,.15);backdrop-filter:blur(6px);
-  border:1.5px solid rgba(255,255,255,.3);color:#fff;
-  padding:12px 28px;border-radius:50px;font-size:14px;font-weight:700;
-  cursor:pointer;transition:all .2s;
-}
-.cam-btn:hover{background:rgba(255,255,255,.28);}
+.cam-btns{position:absolute;bottom:40px;left:0;right:0;
+    display:flex;justify-content:center;gap:16px;}
+.cam-btn{background:rgba(255,255,255,.15);backdrop-filter:blur(6px);
+    border:1.5px solid rgba(255,255,255,.3);color:#fff;
+    padding:12px 28px;border-radius:50px;font-size:14px;font-weight:700;cursor:pointer;}
 .cam-btn.torch-on{background:var(--gold);color:var(--dark);border-color:var(--gold);}
-
-/* result pill that appears briefly on success */
-.cam-result-pill{
-  position:absolute;top:18%;left:50%;transform:translateX(-50%);
-  background:var(--teal);color:#fff;padding:10px 20px;border-radius:50px;
-  font-size:14px;font-weight:700;white-space:nowrap;
-  box-shadow:0 4px 20px rgba(0,0,0,.4);
-  opacity:0;transition:opacity .3s;pointer-events:none;
-}
+.cam-result-pill{position:absolute;top:18%;left:50%;transform:translateX(-50%);
+    background:var(--teal);color:#fff;padding:10px 20px;border-radius:50px;
+    font-size:14px;font-weight:700;white-space:nowrap;
+    box-shadow:0 4px 20px rgba(0,0,0,.4);opacity:0;transition:opacity .3s;pointer-events:none;}
 .cam-result-pill.show{opacity:1;}
 
-/* ══════════════════════════════════════════════════════
-   SCAN PAGE — input area
-══════════════════════════════════════════════════════ */
-.scan-hero{
-  background:linear-gradient(135deg,var(--dark) 0%,var(--mid) 100%);
-  border-radius:16px;padding:20px;margin-bottom:14px;
-  box-shadow:0 4px 20px rgba(0,0,0,.2);
-}
+/* SCAN PAGE */
+.scan-hero{background:linear-gradient(135deg,var(--dark) 0%,var(--mid) 100%);
+    border-radius:16px;padding:20px;margin-bottom:14px;box-shadow:0 4px 20px rgba(0,0,0,.2);}
 .scan-hero h2{color:#fff;font-size:17px;margin-bottom:4px;}
 .scan-hero p{color:var(--gray);font-size:12px;margin-bottom:16px;}
-
 .scan-btn-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
-.scan-cam-btn{
-  background:var(--teal);color:#fff;border:none;border-radius:12px;
-  padding:16px 10px;font-size:14px;font-weight:700;cursor:pointer;
-  display:flex;flex-direction:column;align-items:center;gap:6px;
-  transition:all .2s;box-shadow:0 3px 12px rgba(4,138,129,.4);
-}
-.scan-cam-btn:hover{filter:brightness(1.1);transform:translateY(-1px);}
+.scan-cam-btn{background:var(--teal);color:#fff;border:none;border-radius:12px;
+    padding:16px 10px;font-size:14px;font-weight:700;cursor:pointer;
+    display:flex;flex-direction:column;align-items:center;gap:6px;
+    box-shadow:0 3px 12px rgba(4,138,129,.4);}
 .scan-cam-btn .big-icon{font-size:32px;}
-.scan-manual-btn{
-  background:rgba(255,255,255,.1);color:#fff;border:1.5px solid rgba(255,255,255,.2);
-  border-radius:12px;padding:16px 10px;font-size:14px;font-weight:700;cursor:pointer;
-  display:flex;flex-direction:column;align-items:center;gap:6px;transition:all .2s;
-}
-.scan-manual-btn:hover{background:rgba(255,255,255,.18);}
+.scan-manual-btn{background:rgba(255,255,255,.1);color:#fff;
+    border:1.5px solid rgba(255,255,255,.2);border-radius:12px;
+    padding:16px 10px;font-size:14px;font-weight:700;cursor:pointer;
+    display:flex;flex-direction:column;align-items:center;gap:6px;}
 .scan-manual-btn .big-icon{font-size:32px;}
-
-.manual-input-wrap{position:relative;margin-top:2px;}
-.manual-input-wrap input{
-  width:100%;padding:13px 44px 13px 14px;font-size:15px;border-radius:10px;
-  border:2px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);
-  color:#fff;outline:none;font-weight:700;letter-spacing:1px;
-  transition:border .2s;
-}
+.manual-input-wrap{position:relative;}
+.manual-input-wrap input{width:100%;padding:13px 44px 13px 14px;font-size:15px;
+    border-radius:10px;border:2px solid rgba(255,255,255,.2);
+    background:rgba(255,255,255,.1);color:#fff;outline:none;font-weight:700;
+    letter-spacing:1px;}
 .manual-input-wrap input::placeholder{color:rgba(255,255,255,.4);font-weight:400;letter-spacing:0;}
 .manual-input-wrap input:focus{border-color:var(--gold);}
-.manual-input-wrap .go-btn{
-  position:absolute;right:10px;top:50%;transform:translateY(-50%);
-  background:var(--teal);border:none;color:#fff;width:30px;height:30px;
-  border-radius:8px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;
-}
+.manual-input-wrap .go-btn{position:absolute;right:10px;top:50%;transform:translateY(-50%);
+    background:var(--teal);border:none;color:#fff;width:30px;height:30px;
+    border-radius:8px;font-size:16px;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;}
 
-/* ── BIN RESULT PANEL ── */
+/* BIN PANEL */
 #bin-panel{display:none;}
-.bin-header{
-  background:var(--dark);border-radius:12px 12px 0 0;
-  display:flex;align-items:stretch;overflow:hidden;
-}
+.bin-header{background:var(--dark);border-radius:12px 12px 0 0;
+    display:flex;align-items:stretch;overflow:hidden;}
 .bin-header .cat{flex:1;padding:14px 16px;color:#fff;}
 .bin-header .cat h3{font-size:15px;font-weight:700;}
 .bin-header .cat p{font-size:11px;color:var(--gray);margin-top:2px;}
-.bin-header .rak-box{
-  background:var(--mid);padding:8px 14px;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  border-left:2px solid var(--teal);min-width:76px;
-}
+.bin-header .rak-box{background:var(--mid);padding:8px 14px;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    border-left:2px solid var(--teal);min-width:76px;}
 .rak-label{font-size:11px;color:var(--gold);font-weight:700;}
-.rak-num  {font-size:26px;font-weight:800;color:#fff;line-height:1;}
+.rak-num{font-size:26px;font-weight:800;color:#fff;line-height:1;}
 .rak-kotak{font-size:11px;color:var(--gold);}
-
 .action-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:12px 0;}
-.action-btn{
-  padding:12px 6px;border:none;border-radius:10px;
-  font-size:12px;font-weight:700;cursor:pointer;transition:all .15s;
-  display:flex;flex-direction:column;align-items:center;gap:4px;
-}
+.action-btn{padding:12px 6px;border:none;border-radius:10px;
+    font-size:12px;font-weight:700;cursor:pointer;
+    display:flex;flex-direction:column;align-items:center;gap:4px;}
 .action-btn .icon{font-size:22px;}
-.btn-out   {background:#FEE2E2;color:var(--red);}
-.btn-in    {background:#D1FAE5;color:#065F46;}
+.btn-out{background:#FEE2E2;color:var(--red);}
+.btn-in{background:#D1FAE5;color:#065F46;}
 .btn-opname{background:#EEF2FF;color:#3730A3;}
-.action-btn:hover{filter:brightness(.93);transform:translateY(-1px);}
-
 .items-table{width:100%;border-collapse:collapse;font-size:13px;}
 .items-table th{background:var(--teal);color:#fff;padding:8px 10px;text-align:left;font-weight:700;}
 .items-table th:nth-child(3),.items-table th:nth-child(4){text-align:center;width:58px;}
 .items-table td{padding:8px 10px;border-bottom:1px solid #eee;}
 .items-table tr:nth-child(even) td{background:var(--light);}
 .items-table td:nth-child(3),.items-table td:nth-child(4){text-align:center;}
-.qty-badge{
-  display:inline-block;background:var(--teal);color:#fff;
-  padding:2px 10px;border-radius:12px;font-weight:700;min-width:34px;text-align:center;
-}
-.qty-badge.low {background:var(--red);}
+.qty-badge{display:inline-block;background:var(--teal);color:#fff;
+    padding:2px 10px;border-radius:12px;font-weight:700;min-width:34px;text-align:center;}
+.qty-badge.low{background:var(--red);}
 .qty-badge.zero{background:#999;}
 
-/* ── CARDS ── */
+/* CARDS */
 .card{background:#fff;border-radius:12px;padding:16px;
     box-shadow:0 2px 8px rgba(0,0,0,.07);margin-bottom:14px;}
 .card-title{font-size:15px;font-weight:700;color:var(--dark);
     margin-bottom:12px;display:flex;align-items:center;gap:8px;}
 
-/* ── MODAL ── */
+/* MODAL - slides up from bottom */
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);
-    z-index:200;align-items:flex-end;justify-content:center;padding:0;}
+    z-index:200;align-items:flex-end;justify-content:center;}
 .modal-overlay.open{display:flex;}
 #confirm-overlay.open{display:flex;}
 .modal{background:#fff;border-radius:20px 20px 0 0;width:100%;max-width:500px;
     overflow:hidden;box-shadow:0 -8px 40px rgba(0,0,0,.25);
     max-height:90vh;overflow-y:auto;}
 .modal-head{padding:16px 20px;font-size:16px;font-weight:700;color:#fff;}
-.modal-head.out   {background:var(--red);}
-.modal-head.in    {background:var(--green);}
+.modal-head.out{background:var(--red);}
+.modal-head.in{background:var(--green);}
 .modal-head.opname{background:#3730A3;}
 .modal-head.additem{background:#B45309;}
-.modal-head.editbin{background:#3730A3;}
-.modal-head.newbin {background:var(--teal);}
+.modal-head.editbin,.modal-head.newbin{background:var(--teal);}
 .modal-body{padding:20px;}
 .modal-body label{font-size:12px;font-weight:700;color:var(--mid);
     display:block;margin-bottom:4px;margin-top:14px;}
 .modal-body label:first-child{margin-top:0;}
-.modal-body select,.modal-body input[type=number],.modal-body textarea{
-  width:100%;padding:11px 12px;border:1.5px solid #ddd;border-radius:10px;
-  font-size:15px;outline:none;transition:border .2s;}
-.modal-body select:focus,.modal-body input[type=number]:focus,
-.modal-body textarea:focus{border-color:var(--teal);}
-.modal-body .cur-qty{
-  background:var(--light);border-radius:10px;padding:12px 14px;
-  font-size:24px;font-weight:800;color:var(--dark);text-align:center;}
+.modal-body select,.modal-body input[type=text],
+.modal-body input[type=number],.modal-body textarea{
+    width:100%;padding:11px 12px;border:1.5px solid #ddd;border-radius:10px;
+    font-size:15px;outline:none;transition:border .2s;}
+.modal-body select:focus,.modal-body input:focus,.modal-body textarea:focus{border-color:var(--teal);}
+.modal-body .cur-qty{background:var(--light);border-radius:10px;padding:12px 14px;
+    font-size:24px;font-weight:800;color:var(--dark);text-align:center;}
 .modal-body .cur-qty span{font-size:12px;color:#888;font-weight:400;display:block;}
 .modal-footer{display:flex;gap:8px;padding:0 20px 28px;}
 .modal-footer button{flex:1;padding:14px;border:none;border-radius:10px;
-    font-size:15px;font-weight:700;cursor:pointer;transition:filter .15s;}
-.modal-footer button:hover{filter:brightness(.92);}
+    font-size:15px;font-weight:700;cursor:pointer;}
 .btn-cancel{background:#f0f0f0;color:#555;}
-.btn-confirm-out   {background:var(--red);color:#fff;}
-.btn-confirm-in    {background:var(--green);color:#fff;}
+.btn-confirm-out{background:var(--red);color:#fff;}
+.btn-confirm-in{background:var(--green);color:#fff;}
 .btn-confirm-opname{background:#3730A3;color:#fff;}
 
-/* ── HISTORY ── */
+/* HISTORY */
 .history-item{display:flex;align-items:center;gap:12px;
     padding:10px 0;border-bottom:1px solid #eee;}
 .history-item:last-child{border-bottom:none;}
 .hist-icon{width:36px;height:36px;border-radius:50%;flex-shrink:0;
     display:flex;align-items:center;justify-content:center;font-size:16px;}
-.hist-icon.out   {background:#FEE2E2;}
-.hist-icon.in    {background:#D1FAE5;}
+.hist-icon.out{background:#FEE2E2;}
+.hist-icon.in{background:#D1FAE5;}
 .hist-icon.opname{background:#EEF2FF;}
 .hist-info{flex:1;}
 .hist-info .hist-name{font-size:13px;font-weight:600;}
 .hist-info .hist-meta{font-size:11px;color:#888;margin-top:2px;}
 .hist-qty{font-size:14px;font-weight:700;}
-.hist-qty.out   {color:var(--red);}
-.hist-qty.in    {color:var(--green);}
+.hist-qty.out{color:var(--red);}
+.hist-qty.in{color:var(--green);}
 .hist-qty.opname{color:#3730A3;}
 
-/* ── DASHBOARD ── */
+/* DASHBOARD */
 .stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;}
 .stat-card{background:#fff;border-radius:12px;padding:16px;
     box-shadow:0 2px 8px rgba(0,0,0,.07);text-align:center;border-top:4px solid var(--teal);}
-.stat-card.red  {border-color:var(--red);}
-.stat-card.gold {border-color:var(--gold);}
+.stat-card.red{border-color:var(--red);}
+.stat-card.gold{border-color:var(--gold);}
 .stat-card.green{border-color:var(--green);}
-.stat-num  {font-size:32px;font-weight:800;color:var(--dark);line-height:1;}
+.stat-num{font-size:32px;font-weight:800;color:var(--dark);line-height:1;}
 .stat-label{font-size:12px;color:#888;margin-top:4px;}
 
-/* ── BINS ── */
+/* BINS */
 .search-bar{width:100%;padding:10px 14px;border:1.5px solid #ddd;
     border-radius:10px;font-size:14px;outline:none;margin-bottom:10px;}
 .search-bar:focus{border-color:var(--teal);}
 .pill-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;}
 .pill{padding:4px 12px;border-radius:20px;font-size:12px;
-    border:1.5px solid #ddd;background:#fff;cursor:pointer;transition:.15s;}
+    border:1.5px solid #ddd;background:#fff;cursor:pointer;}
 .pill.active{background:var(--teal);color:#fff;border-color:var(--teal);}
 
-/* ── OPNAME ── */
+/* OPNAME */
 .opname-row{display:flex;align-items:center;gap:10px;
     padding:8px 0;border-bottom:1px solid #eee;}
 .opname-row:last-child{border-bottom:none;}
 .opname-name{flex:1;font-size:13px;}
-.opname-sys {font-size:13px;color:#888;width:38px;text-align:center;}
+.opname-sys{font-size:13px;color:#888;width:38px;text-align:center;}
 .opname-input{width:68px;padding:6px 8px;border:1.5px solid #ddd;
     border-radius:6px;font-size:14px;text-align:center;}
 .opname-diff{width:46px;text-align:center;font-weight:700;font-size:13px;}
 .opname-diff.pos{color:var(--green);}
 .opname-diff.neg{color:var(--red);}
 
-/* ── UTILS ── */
+/* MISC */
 .empty{text-align:center;color:#aaa;padding:32px;font-size:13px;}
 #no-bin{display:none;}
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
@@ -311,24 +235,16 @@ nav{background:var(--dark);color:#fff;display:flex;align-items:center;
 <nav>
   <div class="logo">Rumah<span>Stock</span></div>
   <div class="nav-tabs">
-    <button class="active" onclick="showPage('scan',this)">
-      <span class="nav-icon">📷</span>Scan
-    </button>
-    <button onclick="showPage('bins',this)">
-      <span class="nav-icon">📦</span>Bins
-    </button>
-    <button onclick="showPage('history',this)">
-      <span class="nav-icon">📋</span>History
-    </button>
-    <button onclick="showPage('dashboard',this)">
-      <span class="nav-icon">📊</span>Stats
-    </button>
+    <button class="active" onclick="showPage('scan',this)"><span class="nav-icon">📷</span>Scan</button>
+    <button onclick="showPage('bins',this)"><span class="nav-icon">📦</span>Bins</button>
+    <button onclick="showPage('history',this)"><span class="nav-icon">📋</span>History</button>
+    <button onclick="showPage('dashboard',this)"><span class="nav-icon">📊</span>Stats</button>
   </div>
 </nav>
 
-<!-- ══ CAMERA SCANNER FULLSCREEN ══ -->
+<!-- CAMERA FULLSCREEN -->
 <div id="scanner-modal">
-  <video id="cam-video" autoplay playsinline muted webkit-playsinline x5-playsinline></video>
+  <video id="cam-video" autoplay playsinline muted webkit-playsinline></video>
   <canvas id="cam-canvas"></canvas>
   <div class="cam-overlay"></div>
   <div class="cam-frame">
@@ -337,7 +253,7 @@ nav{background:var(--dark);color:#fff;display:flex;align-items:center;
     <div class="cam-laser"></div>
     <div class="cam-flash" id="cam-flash"></div>
   </div>
-  <div class="cam-hint">
+  <div class="cam-hint" id="cam-hint">
     Point at the QR code on the bin label
     <small>Hold steady — scanning automatically</small>
   </div>
@@ -348,19 +264,17 @@ nav{background:var(--dark);color:#fff;display:flex;align-items:center;
   </div>
 </div>
 
-<!-- ══ SCAN PAGE ══ -->
+<!-- SCAN PAGE -->
 <div id="page-scan" class="page active">
   <div class="scan-hero">
     <h2>📦 Inventory Scanner</h2>
-    <p>Scan the QR code on any bin label to view and update its stock</p>
+    <p>Scan QR code pada label bin atau masukkan Bin ID secara manual</p>
     <div class="scan-btn-row">
       <button class="scan-cam-btn" onclick="openScanner()">
-        <span class="big-icon">📷</span>
-        Scan QR Code
+        <span class="big-icon">📷</span>Scan QR Code
       </button>
       <button class="scan-manual-btn" onclick="focusManual()">
-        <span class="big-icon">⌨️</span>
-        Manual Entry
+        <span class="big-icon">⌨️</span>Manual Entry
       </button>
     </div>
     <div class="manual-input-wrap">
@@ -371,30 +285,24 @@ nav{background:var(--dark);color:#fff;display:flex;align-items:center;
       <button class="go-btn" onclick="scanBin()">→</button>
     </div>
   </div>
-
   <div id="bin-panel">
     <div class="bin-header" id="bin-header"></div>
     <div class="card" style="border-radius:0 0 12px 12px;margin-top:0;padding-top:12px;">
       <div class="action-row">
-        <button class="action-btn btn-out"    onclick="openModal('out')">
-          <span class="icon">📤</span>AMBIL
-        </button>
-        <button class="action-btn btn-in"     onclick="openModal('in')">
-          <span class="icon">📥</span>SIMPAN
-        </button>
-        <button class="action-btn btn-opname" onclick="openModal('opname')">
-          <span class="icon">🔢</span>OPNAME
-        </button>
+        <button class="action-btn btn-out" onclick="openModal('out')"><span class="icon">📤</span>AMBIL</button>
+        <button class="action-btn btn-in"  onclick="openModal('in')"><span class="icon">📥</span>SIMPAN</button>
+        <button class="action-btn btn-opname" onclick="openModal('opname')"><span class="icon">🔢</span>OPNAME</button>
       </div>
-      <!-- manage row -->
       <div style="display:flex;gap:8px;margin-bottom:12px;">
-        <button class="action-btn" style="flex:1;background:#FFF7E6;color:#B45309;border-radius:8px;padding:9px;"
-                onclick="openModal('additem')">
-          <span class="icon" style="font-size:16px;">➕</span>Tambah Barang
+        <button onclick="openModal('additem')"
+          style="flex:1;padding:10px;background:#FFF7E6;color:#B45309;border:1px solid #FDE68A;
+                 border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">
+          ➕ Tambah Barang
         </button>
-        <button class="action-btn" style="flex:1;background:#F0F4FF;color:#3730A3;border-radius:8px;padding:9px;"
-                onclick="openModal('editbin')">
-          <span class="icon" style="font-size:16px;">✏️</span>Edit Bin
+        <button onclick="openModal('editbin')"
+          style="flex:1;padding:10px;background:#EEF2FF;color:#3730A3;border:1px solid #C7D2FE;
+                 border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">
+          ✏️ Edit Bin
         </button>
       </div>
       <table class="items-table">
@@ -403,67 +311,57 @@ nav{background:var(--dark);color:#fff;display:flex;align-items:center;
       </table>
     </div>
   </div>
-  <div id="no-bin" class="card">
-    <div class="empty">❌ Bin ID not found — please try again.</div>
-  </div>
+  <div id="no-bin" class="card"><div class="empty">❌ Bin ID tidak ditemukan — coba lagi.</div></div>
 </div>
 
-<!-- ══ BINS PAGE ══ -->
+<!-- BINS PAGE -->
 <div id="page-bins" class="page">
   <button onclick="openModal('newbin')"
     style="width:100%;margin-bottom:12px;padding:14px;background:var(--teal);color:#fff;
-           border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;
-           display:flex;align-items:center;justify-content:center;gap:8px;
-           box-shadow:0 3px 12px rgba(4,138,129,.35);">
+           border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;">
     ➕ Tambah Bin Baru
   </button>
-  <input class="search-bar" placeholder="🔍  Search bin or item name…" oninput="filterBins(this.value)"/>
+  <input class="search-bar" placeholder="🔍 Cari bin atau nama barang…" oninput="filterBins(this.value)"/>
   <div class="pill-row" id="cat-pills"></div>
   <div id="bins-list"></div>
 </div>
 
-<!-- ══ HISTORY PAGE ══ -->
+<!-- HISTORY PAGE -->
 <div id="page-history" class="page">
   <div class="card">
-    <div class="card-title">Transaction History</div>
-    <div id="history-list"><div class="empty">No transactions yet.</div></div>
+    <div class="card-title">Riwayat Transaksi</div>
+    <div id="history-list"><div class="empty">Belum ada transaksi.</div></div>
   </div>
 </div>
 
-<!-- ══ DASHBOARD PAGE ══ -->
+<!-- DASHBOARD PAGE -->
 <div id="page-dashboard" class="page">
   <div class="stats-grid" id="stats-grid"></div>
   <div class="card">
-    <div class="card-title">Recent Activity</div>
+    <div class="card-title">Aktivitas Terbaru</div>
     <div id="dash-activity"></div>
   </div>
 </div>
 
-<!-- ══ TRANSACTION MODAL ══ -->
-<div class="modal-overlay" id="modal-overlay" onclick="closeModalOutside(event)">
-  <div class="modal" id="modal">
-    <div class="modal-head"   id="modal-head"></div>
-    <div class="modal-body"   id="modal-body"></div>
+<!-- TRANSACTION MODAL -->
+<div class="modal-overlay" id="modal-overlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-head" id="modal-head"></div>
+    <div class="modal-body" id="modal-body"></div>
     <div class="modal-footer" id="modal-footer"></div>
   </div>
 </div>
 
-<!-- ══ CONFIRM DIALOG ══ -->
-<div id="confirm-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);
-     z-index:400;align-items:center;justify-content:center;padding:24px;">
-  <div style="background:#fff;border-radius:16px;width:100%;max-width:340px;overflow:hidden;
-              box-shadow:0 20px 60px rgba(0,0,0,.3);">
-    <div style="padding:20px 20px 4px;">
-      <div id="confirm-title" style="font-size:16px;font-weight:700;color:var(--dark);margin-bottom:8px;"></div>
-      <div id="confirm-msg"   style="font-size:13px;color:#666;"></div>
+<!-- CONFIRM DIALOG -->
+<div id="confirm-overlay" class="modal-overlay" style="z-index:400;">
+  <div class="modal" style="border-radius:16px;max-height:auto;">
+    <div style="padding:20px;">
+      <div id="confirm-title" style="font-size:16px;font-weight:700;margin-bottom:8px;"></div>
+      <div id="confirm-msg" style="font-size:13px;color:#666;"></div>
     </div>
-    <div style="display:flex;gap:8px;padding:16px 20px 20px;">
-      <button onclick="confirmNo()"
-        style="flex:1;padding:12px;border:none;border-radius:8px;background:#f0f0f0;
-               color:#555;font-size:14px;font-weight:700;cursor:pointer;">Batal</button>
-      <button onclick="confirmYes()"
-        style="flex:1;padding:12px;border:none;border-radius:8px;background:var(--red);
-               color:#fff;font-size:14px;font-weight:700;cursor:pointer;">Hapus</button>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="confirmNo()">Batal</button>
+      <button class="btn-confirm-out" onclick="confirmYes()">Hapus</button>
     </div>
   </div>
 </div>
@@ -471,11 +369,9 @@ nav{background:var(--dark);color:#fff;display:flex;align-items:center;
 <div class="toast" id="toast"></div>
 
 <script>
-try {
-
-/* ══════════════════════════════════════════════════════
-   INITIAL DATA
-══════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════
+   DATA
+═══════════════════════════════════════════════ */
 const BINS_INITIAL = [
   {id:"BIN-TOI-D3-05",cat:"Perlengkapan Toilet",rak:"D3",kotak:"5",items:[
     {name:"Muscle Gel Toilet",qty:6,unit:"Pack"},{name:"Kamper Bebek",qty:10,unit:"Pcs"},
@@ -560,246 +456,224 @@ const BINS_INITIAL = [
     {name:"Kasa Steril Dres",qty:7,unit:"Kotak"}]},
 ];
 
-/* ══════════════════════════════════════════════════════
-   STATE
-══════════════════════════════════════════════════════ */
-/* ══════════════════════════════════════════════════════
-   STATE — uses window.storage (artifact) or localStorage
-══════════════════════════════════════════════════════ */
-// In-memory fallback store
-let _memStore = {};
-
-async function loadState(){
-  // Try window.storage (Claude artifact API)
+/* ═══════════════════════════════════════════════
+   STATE  (localStorage + in-memory fallback)
+═══════════════════════════════════════════════ */
+let state = { bins: JSON.parse(JSON.stringify(BINS_INITIAL)), history: [] };
+(function loadState(){
   try {
-    if(window.storage){
-      const r = await window.storage.get('rumahstock_state');
-      if(r && r.value) return JSON.parse(r.value);
-    }
+    const s = localStorage.getItem('rumahstock_v3');
+    if(s){ const p=JSON.parse(s); if(p&&p.bins) state=p; }
   } catch(e){}
-  // Try localStorage
-  try {
-    const s = localStorage.getItem('rumahstock_v2');
-    if(s) return JSON.parse(s);
-  } catch(e){}
-  return {bins:JSON.parse(JSON.stringify(BINS_INITIAL)), history:[]};
-}
-
+})();
 function saveState(){
-  // Try window.storage (Claude artifact API)
-  try {
-    if(window.storage){
-      window.storage.set('rumahstock_state', JSON.stringify(state));
-    }
-  } catch(e){}
-  // Try localStorage as bonus
-  try { localStorage.setItem('rumahstock_v2', JSON.stringify(state)); } catch(e){}
+  try { localStorage.setItem('rumahstock_v3', JSON.stringify(state)); } catch(e){}
 }
 
-let state = {bins:JSON.parse(JSON.stringify(BINS_INITIAL)), history:[]};
 let currentBin = null;
-// Load async state then re-render if data found
-loadState().then(loaded => {
-  state = loaded;
-}).catch(()=>{});
 
-/* ══════════════════════════════════════════════════════
-   CAMERA SCANNER — iOS 26 / Safari compatible
-══════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════
+   CAMERA — uses ImageCapture + BarcodeDetector
+   Falls back gracefully on unsupported browsers
+═══════════════════════════════════════════════ */
 let camStream=null, scanLoop=null, torchOn=false, scanLocked=false;
 
 async function openScanner(){
-  const modal=document.getElementById('scanner-modal');
-  modal.classList.add('open');
-  scanLocked=false;
-  document.querySelector('.cam-hint').innerHTML=
-    'Point at the QR code on the bin label<small>Hold steady — scanning automatically</small>';
+  // First check if getUserMedia is available at all
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+    showToast('⚠️ Kamera tidak didukung browser ini — gunakan Manual Entry');
+    return;
+  }
 
-  try{
-    // iOS Safari needs exact constraint format
-    const constraints={
-      video:{
-        facingMode:'environment',
-        width:{ideal:1920},
-        height:{ideal:1080}
-      }
-    };
-    camStream=await navigator.mediaDevices.getUserMedia(constraints);
-    const video=document.getElementById('cam-video');
-    video.srcObject=camStream;
-    // iOS requires these attributes set before play
-    video.setAttribute('playsinline','true');
-    video.setAttribute('muted','true');
-    video.muted=true;
-    await new Promise((res,rej)=>{
-      video.onloadedmetadata=()=>res();
-      video.onerror=rej;
-      setTimeout(res,3000); // timeout fallback
+  document.getElementById('scanner-modal').classList.add('open');
+  scanLocked = false;
+  document.getElementById('cam-hint').innerHTML =
+    'Menghubungkan kamera…<small>Mohon tunggu sebentar</small>';
+
+  try {
+    // Simple constraints work best cross-browser
+    camStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'environment' },
+      audio: false
     });
-    await video.play();
-    startDecodeLoop();
-  }catch(err){
+
+    const video = document.getElementById('cam-video');
+    video.srcObject = camStream;
+    video.muted = true;
+
+    // Wait for video to be ready — critical for iOS
+    await new Promise((resolve) => {
+      video.onloadedmetadata = resolve;
+      video.oncanplay = resolve;
+      setTimeout(resolve, 4000); // hard timeout
+    });
+    video.play().catch(()=>{});
+
+    // Short delay before starting decode on iOS
+    setTimeout(()=>{
+      document.getElementById('cam-hint').innerHTML =
+        'Arahkan ke QR Code pada label bin<small>Tahan agar stabil</small>';
+      startDecodeLoop();
+    }, 800);
+
+  } catch(err) {
     closeScanner();
-    const msg = err.name==='NotAllowedError'
-      ? '⚠️ Izin kamera ditolak — buka Settings > Safari > Camera > Allow'
-      : '⚠️ Kamera tidak tersedia — gunakan Manual Entry';
-    showToast(msg);
-    // Show the error in a more visible way
-    document.getElementById('bin-panel').style.display='none';
-    document.getElementById('no-bin').style.display='none';
-    const hero=document.querySelector('.scan-hero p');
-    if(hero) hero.innerHTML='<span style="color:#E8B84B">'+msg+'</span>';
+    if(err.name === 'NotAllowedError'){
+      showToast('📸 Izin kamera ditolak');
+      // Show instructions on screen
+      document.getElementById('scan-input').placeholder = 'Izin kamera ditolak — ketik Bin ID di sini';
+    } else {
+      showToast('⚠️ Kamera tidak bisa dibuka — gunakan Manual Entry');
+    }
   }
 }
 
 function closeScanner(){
   document.getElementById('scanner-modal').classList.remove('open');
-  if(scanLoop){cancelAnimationFrame(scanLoop);scanLoop=null;}
-  if(camStream){camStream.getTracks().forEach(t=>{try{t.stop();}catch(e){}});camStream=null;}
-  torchOn=false;
-  try{document.getElementById('torch-btn').classList.remove('torch-on');}catch(e){}
-  try{document.getElementById('cam-result-pill').classList.remove('show');}catch(e){}
+  if(scanLoop){ cancelAnimationFrame(scanLoop); scanLoop=null; }
+  if(camStream){ camStream.getTracks().forEach(t=>{ try{t.stop();}catch(e){} }); camStream=null; }
+  torchOn = false;
+  try{ document.getElementById('torch-btn').classList.remove('torch-on'); }catch(e){}
+  try{ document.getElementById('cam-result-pill').classList.remove('show'); }catch(e){}
 }
 
 function startDecodeLoop(){
   const video  = document.getElementById('cam-video');
   const canvas = document.getElementById('cam-canvas');
-  const ctx    = canvas.getContext('2d',{willReadFrequently:true});
+  const ctx    = canvas.getContext('2d', { willReadFrequently: true });
 
-  // Check what's available
-  const hasBarcodeDetector = typeof BarcodeDetector !== 'undefined';
-  let bd = null;
-  if(hasBarcodeDetector){
-    try{ bd = new BarcodeDetector({formats:['qr_code']}); }catch(e){ bd=null; }
+  // Try to get BarcodeDetector
+  let detector = null;
+  if(typeof BarcodeDetector !== 'undefined'){
+    try {
+      detector = new BarcodeDetector({ formats: ['qr_code'] });
+    } catch(e){ detector = null; }
   }
 
-  // If nothing available show message
-  if(!bd){
-    document.querySelector('.cam-hint').innerHTML =
-      'QR scan not supported on this browser<br>'+
-      '<small>Use Manual Entry below — type the Bin ID</small>';
+  if(!detector){
+    // BarcodeDetector not available
+    document.getElementById('cam-hint').innerHTML =
+      '⚠️ QR scan tidak didukung browser ini<br>' +
+      '<small>Gunakan Manual Entry — ketik Bin ID di bawah</small>';
+    // Close scanner and focus manual input
+    setTimeout(()=>{
+      closeScanner();
+      document.getElementById('scan-input').focus();
+    }, 2500);
     return;
   }
 
-  let frameCount=0;
+  let frameSkip = 0;
   function tick(){
-    if(!camStream) return;
-    frameCount++;
-    // Only decode every 8 frames to save battery
-    if(frameCount % 8 === 0 && video.readyState >= 2){
-      canvas.width  = video.videoWidth  || 640;
-      canvas.height = video.videoHeight || 480;
-      ctx.drawImage(video,0,0,canvas.width,canvas.height);
-      if(!scanLocked && bd){
-        bd.detect(canvas)
-          .then(codes=>{ if(codes.length>0) handleScanResult(codes[0].rawValue); })
-          .catch(()=>{});
-      }
+    if(!camStream){ return; }
+    frameSkip++;
+    // Scan every 6th frame — saves CPU/battery
+    if(frameSkip % 6 === 0 && !scanLocked && video.videoWidth > 0){
+      canvas.width  = video.videoWidth;
+      canvas.height = video.videoHeight;
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      detector.detect(canvas)
+        .then(codes => { if(codes.length > 0) handleScanResult(codes[0].rawValue); })
+        .catch(()=>{});
     }
-    scanLoop=requestAnimationFrame(tick);
+    scanLoop = requestAnimationFrame(tick);
   }
-  scanLoop=requestAnimationFrame(tick);
-}
-
-function handleScanResult(raw){
-  if(scanLocked) return;
-  // Strip any URL prefix — handles homestock://, rumahstock://, plain ID, or full URL
-  const id=raw.replace(/^.*?(?:homestock|rumahstock):\/\/bin\//i,'').trim().toUpperCase();
-  const bin=state.bins.find(b=>b.id===id);
-  if(!bin){
-    // Show feedback so user knows scan worked but bin wasn't recognised
-    scanLocked=true;
-    const pill=document.getElementById('cam-result-pill');
-    pill.textContent='⚠️ Bin tidak dikenal: '+id;
-    pill.classList.add('show');
-    setTimeout(()=>{pill.classList.remove('show');scanLocked=false;},2000);
-    return;
-  }
-
-  scanLocked=true; // prevent double-fire
-
-  // Flash + pill
-  const flash=document.getElementById('cam-flash');
-  flash.classList.remove('go');void flash.offsetWidth;flash.classList.add('go');
-  const pill=document.getElementById('cam-result-pill');
-  pill.textContent='✅ '+bin.cat+' · Rak '+bin.rak;
-  pill.classList.add('show');
-
-  // Haptic feedback
-  if(navigator.vibrate) navigator.vibrate([60,30,60]);
-
-  setTimeout(()=>{
-    closeScanner();
-    document.getElementById('scan-input').value=id;
-    loadBin(bin);
-  },700);
+  scanLoop = requestAnimationFrame(tick);
 }
 
 async function toggleTorch(){
   if(!camStream) return;
-  const track=camStream.getVideoTracks()[0];
-  try{
-    torchOn=!torchOn;
-    await track.applyConstraints({advanced:[{torch:torchOn}]});
-    document.getElementById('torch-btn').classList.toggle('torch-on',torchOn);
-  }catch(e){showToast('Torch not supported on this device');}
+  const track = camStream.getVideoTracks()[0];
+  try {
+    torchOn = !torchOn;
+    await track.applyConstraints({ advanced: [{ torch: torchOn }] });
+    document.getElementById('torch-btn').classList.toggle('torch-on', torchOn);
+  } catch(e){ showToast('Torch tidak tersedia di perangkat ini'); }
 }
 
-/* ══════════════════════════════════════════════════════
-   SCAN / BIN DISPLAY
-══════════════════════════════════════════════════════ */
-function focusManual(){document.getElementById('scan-input').focus();}
+function handleScanResult(raw){
+  if(scanLocked) return;
+  const id = raw.replace(/^.*?(?:homestock|rumahstock):\/\/bin\//i,'').trim().toUpperCase();
+  const bin = state.bins.find(b => b.id === id);
+
+  const pill = document.getElementById('cam-result-pill');
+  if(!bin){
+    // QR detected but not a bin QR — ignore silently, keep scanning
+    return;
+  }
+
+  scanLocked = true;
+  const flash = document.getElementById('cam-flash');
+  flash.classList.remove('go'); void flash.offsetWidth; flash.classList.add('go');
+  pill.textContent = '✅ ' + bin.cat + ' · Rak ' + bin.rak;
+  pill.classList.add('show');
+  if(navigator.vibrate) navigator.vibrate([60,30,60]);
+
+  setTimeout(()=>{
+    closeScanner();
+    document.getElementById('scan-input').value = id;
+    loadBin(bin);
+  }, 700);
+}
+
+/* ═══════════════════════════════════════════════
+   SCAN / BIN
+═══════════════════════════════════════════════ */
+function focusManual(){ document.getElementById('scan-input').focus(); }
 
 function scanBin(){
-  const raw=document.getElementById('scan-input').value.trim().toUpperCase();
-  const id=raw.replace(/^.*?(?:HOMESTOCK|RUMAHSTOCK):\/\/BIN\//,'');
-  const bin=state.bins.find(b=>b.id===id);
-  document.getElementById('no-bin').style.display=bin?'none':'block';
+  const raw = document.getElementById('scan-input').value.trim().toUpperCase();
+  const id  = raw.replace(/^.*?(?:HOMESTOCK|RUMAHSTOCK):\/\/BIN\//,'');
+  const bin = state.bins.find(b => b.id === id);
+  document.getElementById('no-bin').style.display  = bin ? 'none'  : 'block';
+  document.getElementById('bin-panel').style.display = bin ? 'block' : 'none';
   if(bin) loadBin(bin);
-  else document.getElementById('bin-panel').style.display='none';
 }
 
 function loadBin(bin){
-  currentBin=bin;
-  document.getElementById('bin-panel').style.display='block';
-  document.getElementById('no-bin').style.display='none';
+  currentBin = bin;
+  document.getElementById('bin-panel').style.display = 'block';
+  document.getElementById('no-bin').style.display    = 'none';
   renderBinHeader(bin);
   renderItemsTable(bin);
-  // Smooth scroll to result
-  setTimeout(()=>document.getElementById('bin-panel').scrollIntoView({behavior:'smooth',block:'start'}),100);
+  setTimeout(()=> document.getElementById('bin-panel')
+    .scrollIntoView({behavior:'smooth',block:'start'}), 100);
 }
 
 function renderBinHeader(bin){
-  document.getElementById('bin-header').innerHTML=`
-    <div class="cat"><h3>${bin.cat}</h3><p>${bin.id}</p></div>
-    <div class="rak-box">
-      <div class="rak-label">RAK</div>
-      <div class="rak-num">${bin.rak}</div>
-      <div class="rak-kotak">Kotak ${bin.kotak}</div>
-    </div>`;
+  document.getElementById('bin-header').innerHTML =
+    `<div class="cat"><h3>${bin.cat}</h3><p>${bin.id}</p></div>
+     <div class="rak-box">
+       <div class="rak-label">RAK</div>
+       <div class="rak-num">${bin.rak}</div>
+       <div class="rak-kotak">Kotak ${bin.kotak}</div>
+     </div>`;
 }
 
 function renderItemsTable(bin){
-  const tbody=document.getElementById('items-body');
-  if(!bin.items.length){tbody.innerHTML='<tr><td colspan="5" class="empty">Belum ada barang — tap Tambah Barang.</td></tr>';return;}
-  tbody.innerHTML=bin.items.map((it,i)=>{
-    const cls=it.qty===0?'zero':it.qty<=2?'low':'';
-    return`<tr>
-      <td>${i+1}</td>
-      <td>${it.name}</td>
+  const tbody = document.getElementById('items-body');
+  if(!bin.items.length){
+    tbody.innerHTML = '<tr><td colspan="5" class="empty">Belum ada barang — tap Tambah Barang</td></tr>';
+    return;
+  }
+  tbody.innerHTML = bin.items.map((it,i) => {
+    const cls = it.qty===0?'zero':it.qty<=2?'low':'';
+    return `<tr>
+      <td>${i+1}</td><td>${it.name}</td>
       <td><span class="qty-badge ${cls}">${it.qty}</span></td>
       <td>${it.unit}</td>
-      <td><button onclick="deleteItem(${i})" style="background:none;border:none;font-size:15px;cursor:pointer;color:#ccc;padding:2px 4px;" title="Hapus">🗑</button></td>
+      <td><button onclick="deleteItem(${i})"
+        style="background:none;border:none;font-size:15px;cursor:pointer;color:#ccc;">🗑</button></td>
     </tr>`;
   }).join('');
 }
 
-/* ══════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════
    NAVIGATION
-══════════════════════════════════════════════════════ */
-function showPage(id,btn){
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.nav-tabs button').forEach(b=>b.classList.remove('active'));
+═══════════════════════════════════════════════ */
+function showPage(id, btn){
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tabs button').forEach(b => b.classList.remove('active'));
   document.getElementById('page-'+id).classList.add('active');
   if(btn) btn.classList.add('active');
   if(id==='bins')      renderBins();
@@ -807,222 +681,201 @@ function showPage(id,btn){
   if(id==='dashboard') renderDashboard();
 }
 
-/* ══════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════
    MODALS
-══════════════════════════════════════════════════════ */
+═══════════════════════════════════════════════ */
 function openModal(type){
-  if((type==='out'||type==='in'||type==='opname'||type==='additem'||type==='editbin')&&!currentBin) return;
-  const bin=currentBin;
-  const labels={
+  if(['out','in','opname','additem','editbin'].includes(type) && !currentBin) return;
+  const bin = currentBin;
+  const labels = {
     out:'📤 AMBIL BARANG', in:'📥 SIMPAN BARANG', opname:'🔢 STOCK OPNAME',
-    additem:'➕ TAMBAH BARANG', editbin:'✏️ EDIT BIN', newbin:'📦 TAMBAH BIN BARU'
+    additem:'➕ TAMBAH BARANG', editbin:'✏️ EDIT BIN', newbin:'📦 BIN BARU'
   };
-  const headColors={out:'out',in:'in',opname:'opname',additem:'additem',editbin:'editbin',newbin:'newbin'};
-  document.getElementById('modal-head').className='modal-head '+(headColors[type]||type);
-  document.getElementById('modal-head').textContent=labels[type];
+  document.getElementById('modal-head').className = 'modal-head ' + type;
+  document.getElementById('modal-head').textContent = labels[type] || type;
 
-  if(type==='out'||type==='in'){
-    const opts=bin.items.map((it,i)=>`<option value="${i}">${it.name} — ${it.qty} ${it.unit}</option>`).join('');
-    document.getElementById('modal-body').innerHTML=`
+  if(type==='out' || type==='in'){
+    if(!bin.items.length){ showToast('Bin kosong — tambah barang dulu'); return; }
+    const opts = bin.items.map((it,i)=>
+      `<option value="${i}">${it.name} — ${it.qty} ${it.unit}</option>`).join('');
+    document.getElementById('modal-body').innerHTML = `
       <label>Pilih Barang</label>
       <select id="m-item" onchange="updateCurQty()">${opts}</select>
       <label>Qty Sekarang</label>
-      <div class="cur-qty" id="m-curqty">${bin.items[0]?.qty||0}<span>${bin.items[0]?.unit||''}</span></div>
+      <div class="cur-qty" id="m-curqty">${bin.items[0].qty}<span>${bin.items[0].unit}</span></div>
       <label>Jumlah ${type==='out'?'Diambil':'Disimpan'}</label>
       <input type="number" id="m-qty" min="1" value="1" inputmode="numeric"/>
       <label>Catatan (opsional)</label>
-      <textarea id="m-note" rows="2" placeholder="Contoh: dipakai kamar mandi utama…"></textarea>`;
-    document.getElementById('modal-footer').innerHTML=`
+      <textarea id="m-note" rows="2" placeholder="Opsional…"></textarea>`;
+    document.getElementById('modal-footer').innerHTML = `
       <button class="btn-cancel" onclick="closeModal()">Batal</button>
-      <button class="btn-confirm-${type}" onclick="confirmTx('${type}')">${type==='out'?'✅ Ambil':'✅ Simpan'}</button>`;
+      <button class="btn-confirm-${type}" onclick="confirmTx('${type}')">
+        ${type==='out'?'✅ Ambil':'✅ Simpan'}</button>`;
 
   } else if(type==='opname'){
-    const rows=bin.items.map((it,i)=>`
+    const rows = bin.items.map((it,i)=>`
       <div class="opname-row">
         <div class="opname-name">${it.name}</div>
         <div class="opname-sys">${it.qty}</div>
-        <input class="opname-input" type="number" inputmode="numeric" id="op-${i}" min="0" value="${it.qty}"
-               oninput="updateDiff(${i},${it.qty})"/>
+        <input class="opname-input" type="number" inputmode="numeric"
+               id="op-${i}" min="0" value="${it.qty}" oninput="updateDiff(${i},${it.qty})"/>
         <div class="opname-diff" id="opd-${i}">—</div>
       </div>`).join('');
-    document.getElementById('modal-body').innerHTML=`
-      <div style="display:flex;gap:8px;font-size:11px;font-weight:700;color:#888;margin-bottom:6px;padding:0 4px;">
-        <div style="flex:1">NAMA BARANG</div>
-        <div style="width:38px;text-align:center">SYS</div>
+    document.getElementById('modal-body').innerHTML = `
+      <div style="display:flex;gap:8px;font-size:11px;font-weight:700;color:#888;margin-bottom:6px;">
+        <div style="flex:1">NAMA</div><div style="width:38px;text-align:center">SYS</div>
         <div style="width:68px;text-align:center">AKTUAL</div>
         <div style="width:46px;text-align:center">DIFF</div>
       </div>${rows}`;
-    document.getElementById('modal-footer').innerHTML=`
+    document.getElementById('modal-footer').innerHTML = `
       <button class="btn-cancel" onclick="closeModal()">Batal</button>
-      <button class="btn-confirm-opname" onclick="confirmOpname()">✅ Simpan Opname</button>`;
+      <button class="btn-confirm-opname" onclick="confirmOpname()">✅ Simpan</button>`;
 
   } else if(type==='additem'){
-    document.getElementById('modal-body').innerHTML=`
+    document.getElementById('modal-body').innerHTML = `
       <label>Nama Barang</label>
       <input type="text" id="ai-name" placeholder="Contoh: Sabun Mandi" autocomplete="off"/>
       <label>Qty Awal</label>
       <input type="number" id="ai-qty" min="0" value="0" inputmode="numeric"/>
       <label>Unit</label>
-      <input type="text" id="ai-unit" placeholder="Contoh: Pcs, Pack, Bte, Pouch"/>`;
-    document.getElementById('modal-footer').innerHTML=`
+      <input type="text" id="ai-unit" placeholder="Pcs / Pack / Bte / Pouch"/>`;
+    document.getElementById('modal-footer').innerHTML = `
       <button class="btn-cancel" onclick="closeModal()">Batal</button>
       <button class="btn-confirm-in" onclick="confirmAddItem()">✅ Tambah</button>`;
+    setTimeout(()=>{ try{document.getElementById('ai-name').focus();}catch(e){} },100);
 
   } else if(type==='editbin'){
-    document.getElementById('modal-body').innerHTML=`
+    document.getElementById('modal-body').innerHTML = `
       <label>Nama Kategori</label>
       <input type="text" id="eb-cat" value="${bin.cat}"/>
       <label>Rak</label>
-      <input type="text" id="eb-rak" value="${bin.rak}" placeholder="Contoh: D3"/>
+      <input type="text" id="eb-rak" value="${bin.rak}"/>
       <label>Kotak</label>
-      <input type="text" id="eb-kotak" value="${bin.kotak}" placeholder="Contoh: 5"/>
-      <label style="margin-top:20px;color:var(--red);">⚠️ Zona Bahaya</label>
-      <button onclick="confirmDeleteBin()"
-        style="width:100%;padding:12px;background:#FEE2E2;color:var(--red);border:1.5px solid #FECACA;
-               border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;margin-top:4px;">
-        🗑 Hapus Bin Ini
-      </button>`;
-    document.getElementById('modal-footer').innerHTML=`
+      <input type="text" id="eb-kotak" value="${bin.kotak}"/>
+      <div style="margin-top:20px;padding-top:16px;border-top:1px solid #eee;">
+        <button onclick="confirmDeleteBin()"
+          style="width:100%;padding:12px;background:#FEE2E2;color:var(--red);
+                 border:1.5px solid #FECACA;border-radius:8px;font-size:14px;
+                 font-weight:700;cursor:pointer;">🗑 Hapus Bin Ini</button>
+      </div>`;
+    document.getElementById('modal-footer').innerHTML = `
       <button class="btn-cancel" onclick="closeModal()">Batal</button>
       <button class="btn-confirm-opname" onclick="confirmEditBin()">✅ Simpan</button>`;
 
   } else if(type==='newbin'){
-    document.getElementById('modal-body').innerHTML=`
+    document.getElementById('modal-body').innerHTML = `
       <label>Nama Kategori</label>
       <input type="text" id="nb-cat" placeholder="Contoh: Perlengkapan Dapur"/>
       <label>Rak</label>
       <input type="text" id="nb-rak" placeholder="Contoh: A1"/>
       <label>Kotak</label>
       <input type="text" id="nb-kotak" placeholder="Contoh: 3"/>
-      <label>Bin ID <span style="font-weight:400;color:#aaa;">(auto-generated, bisa diubah)</span></label>
+      <label>Bin ID <small style="font-weight:400;color:#aaa;">(auto, bisa diubah)</small></label>
       <input type="text" id="nb-id" placeholder="BIN-DAP-A1-03"/>`;
-    // Auto-generate ID as user types
     setTimeout(()=>{
-      const catEl=document.getElementById('nb-cat');
-      const rakEl=document.getElementById('nb-rak');
-      const kotakEl=document.getElementById('nb-kotak');
-      function genId(){
-        const c=(catEl.value.trim().split(' ')[0]||'BIN').substring(0,3).toUpperCase();
-        const r=(rakEl.value.trim()||'X').toUpperCase();
-        const k=(kotakEl.value.trim()||'0').toUpperCase();
-        document.getElementById('nb-id').value=`BIN-${c}-${r}-${k}`;
+      const c=document.getElementById('nb-cat');
+      const r=document.getElementById('nb-rak');
+      const k=document.getElementById('nb-kotak');
+      function gen(){
+        const cv=(c.value.trim().split(' ')[0]||'BIN').substring(0,3).toUpperCase();
+        const rv=(r.value.trim()||'X').toUpperCase();
+        const kv=(k.value.trim()||'0').toUpperCase();
+        document.getElementById('nb-id').value=`BIN-${cv}-${rv}-${kv}`;
       }
-      catEl.oninput=rakEl.oninput=kotakEl.oninput=genId;
-    },50);
-    document.getElementById('modal-footer').innerHTML=`
+      c.oninput=r.oninput=k.oninput=gen;
+      try{c.focus();}catch(e){}
+    },100);
+    document.getElementById('modal-footer').innerHTML = `
       <button class="btn-cancel" onclick="closeModal()">Batal</button>
       <button class="btn-confirm-in" onclick="confirmNewBin()">✅ Buat Bin</button>`;
   }
   document.getElementById('modal-overlay').classList.add('open');
 }
 
+function closeModal(){ document.getElementById('modal-overlay').classList.remove('open'); }
+
 function updateCurQty(){
-  const i=parseInt(document.getElementById('m-item').value);
-  const it=currentBin.items[i];
-  document.getElementById('m-curqty').innerHTML=`${it.qty}<span>${it.unit}</span>`;
+  const i = parseInt(document.getElementById('m-item').value);
+  const it = currentBin.items[i];
+  document.getElementById('m-curqty').innerHTML = `${it.qty}<span>${it.unit}</span>`;
 }
 
-function updateDiff(i,sys){
-  const actual=parseInt(document.getElementById(`op-${i}`).value)||0;
-  const diff=actual-sys;
-  const el=document.getElementById(`opd-${i}`);
-  el.textContent=diff===0?'—':(diff>0?'+'+diff:diff);
-  el.className='opname-diff '+(diff>0?'pos':diff<0?'neg':'');
+function updateDiff(i, sys){
+  const actual = parseInt(document.getElementById(`op-${i}`).value)||0;
+  const diff = actual - sys;
+  const el = document.getElementById(`opd-${i}`);
+  el.textContent = diff===0?'—':(diff>0?'+'+diff:diff);
+  el.className = 'opname-diff '+(diff>0?'pos':diff<0?'neg':'');
 }
 
 function confirmTx(type){
-  const i=parseInt(document.getElementById('m-item').value);
-  const qty=parseInt(document.getElementById('m-qty').value)||0;
-  const note=document.getElementById('m-note').value.trim();
-  if(qty<=0){showToast('⚠️ Masukkan jumlah yang valid');return;}
-  const it=currentBin.items[i];
-  if(type==='out'&&qty>it.qty){showToast(`⚠️ Stok hanya ${it.qty} ${it.unit}`);return;}
-  const before=it.qty;
-  it.qty=type==='out'?it.qty-qty:it.qty+qty;
-  addHistory(type,currentBin,it.name,qty,it.unit,before,it.qty,note);
+  const i   = parseInt(document.getElementById('m-item').value);
+  const qty = parseInt(document.getElementById('m-qty').value)||0;
+  const note = document.getElementById('m-note').value.trim();
+  if(qty<=0){ showToast('⚠️ Masukkan jumlah yang valid'); return; }
+  const it = currentBin.items[i];
+  if(type==='out' && qty>it.qty){ showToast(`⚠️ Stok hanya ${it.qty} ${it.unit}`); return; }
+  const before = it.qty;
+  it.qty = type==='out' ? it.qty-qty : it.qty+qty;
+  addHistory(type, currentBin, it.name, qty, it.unit, before, it.qty, note);
   saveState(); renderItemsTable(currentBin); closeModal();
-  showToast(type==='out'?`📤 ${qty} ${it.unit} diambil`:`📥 ${qty} ${it.unit} disimpan`);
+  showToast(type==='out' ? `📤 ${qty} ${it.unit} diambil` : `📥 ${qty} ${it.unit} disimpan`);
 }
 
 function confirmOpname(){
   const changes=[];
   currentBin.items.forEach((it,i)=>{
-    const actual=parseInt(document.getElementById(`op-${i}`).value);
-    if(!isNaN(actual)&&actual!==it.qty){changes.push({name:it.name,unit:it.unit,before:it.qty,after:actual});it.qty=actual;}
+    const actual = parseInt(document.getElementById(`op-${i}`).value);
+    if(!isNaN(actual) && actual!==it.qty){
+      changes.push({name:it.name,unit:it.unit,before:it.qty,after:actual});
+      it.qty = actual;
+    }
   });
-  if(!changes.length){showToast('Tidak ada perubahan');closeModal();return;}
-  changes.forEach(c=>addHistory('opname',currentBin,c.name,Math.abs(c.after-c.before),c.unit,c.before,c.after,'Stock Opname'));
+  if(!changes.length){ showToast('Tidak ada perubahan'); closeModal(); return; }
+  changes.forEach(c => addHistory('opname',currentBin,c.name,
+    Math.abs(c.after-c.before),c.unit,c.before,c.after,'Stock Opname'));
   saveState(); renderItemsTable(currentBin); closeModal();
   showToast(`✅ Opname selesai — ${changes.length} item diperbarui`);
 }
 
 function confirmAddItem(){
-  const name=document.getElementById('ai-name').value.trim();
-  const qty=parseInt(document.getElementById('ai-qty').value)||0;
-  const unit=document.getElementById('ai-unit').value.trim();
-  if(!name){showToast('⚠️ Nama barang tidak boleh kosong');return;}
-  currentBin.items.push({name,qty,unit});
+  const name = document.getElementById('ai-name').value.trim();
+  const qty  = parseInt(document.getElementById('ai-qty').value)||0;
+  const unit = document.getElementById('ai-unit').value.trim();
+  if(!name){ showToast('⚠️ Nama barang tidak boleh kosong'); return; }
+  currentBin.items.push({name, qty, unit});
   saveState(); renderItemsTable(currentBin); closeModal();
-  showToast(`✅ "${name}" ditambahkan ke bin`);
+  showToast(`✅ "${name}" ditambahkan`);
 }
 
 function confirmEditBin(){
-  const cat=document.getElementById('eb-cat').value.trim();
-  const rak=document.getElementById('eb-rak').value.trim();
-  const kotak=document.getElementById('eb-kotak').value.trim();
-  if(!cat||!rak){showToast('⚠️ Kategori dan Rak tidak boleh kosong');return;}
+  const cat   = document.getElementById('eb-cat').value.trim();
+  const rak   = document.getElementById('eb-rak').value.trim();
+  const kotak = document.getElementById('eb-kotak').value.trim();
+  if(!cat||!rak){ showToast('⚠️ Kategori dan Rak wajib diisi'); return; }
   currentBin.cat=cat; currentBin.rak=rak; currentBin.kotak=kotak;
   saveState(); renderBinHeader(currentBin); closeModal();
-  showToast('✅ Bin berhasil diperbarui');
+  showToast('✅ Bin diperbarui');
 }
 
 function confirmNewBin(){
-  const cat=document.getElementById('nb-cat').value.trim();
-  const rak=document.getElementById('nb-rak').value.trim();
-  const kotak=document.getElementById('nb-kotak').value.trim();
-  const id=document.getElementById('nb-id').value.trim().toUpperCase();
-  if(!cat||!rak||!id){showToast('⚠️ Semua field wajib diisi');return;}
-  if(state.bins.find(b=>b.id===id)){showToast('⚠️ Bin ID sudah ada, ganti ID-nya');return;}
-  const newBin={id,cat,rak,kotak,items:[]};
+  const cat   = document.getElementById('nb-cat').value.trim();
+  const rak   = document.getElementById('nb-rak').value.trim();
+  const kotak = document.getElementById('nb-kotak').value.trim();
+  const id    = document.getElementById('nb-id').value.trim().toUpperCase();
+  if(!cat||!rak||!id){ showToast('⚠️ Semua field wajib diisi'); return; }
+  if(state.bins.find(b=>b.id===id)){ showToast('⚠️ Bin ID sudah ada'); return; }
+  const newBin = {id, cat, rak, kotak, items:[]};
   state.bins.push(newBin);
   saveState(); closeModal();
-  showToast(`✅ Bin "${id}" berhasil dibuat`);
-  // Navigate to the new bin
-  currentBin=newBin;
+  showToast(`✅ Bin "${id}" dibuat`);
+  currentBin = newBin;
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-tabs button').forEach(b=>b.classList.remove('active'));
   document.getElementById('page-scan').classList.add('active');
   document.querySelector('.nav-tabs button').classList.add('active');
-  document.getElementById('scan-input').value=id;
+  document.getElementById('scan-input').value = id;
   loadBin(newBin);
-}
-
-function deleteItem(i){
-  const name = currentBin.items[i].name;
-  openConfirm(
-    `Hapus "${name}"?`,
-    'Barang ini akan dihapus dari bin.',
-    () => {
-      currentBin.items.splice(i, 1);
-      saveState(); renderItemsTable(currentBin);
-      showToast('🗑 Barang dihapus');
-    }
-  );
-}
-
-function confirmDeleteBin(){
-  openConfirm(
-    `Hapus bin "${currentBin.id}"?`,
-    'Seluruh data barang dalam bin ini akan hilang permanen.',
-    () => {
-      state.bins = state.bins.filter(b => b.id !== currentBin.id);
-      saveState(); closeModal();
-      currentBin = null;
-      document.getElementById('bin-panel').style.display = 'none';
-      document.getElementById('scan-input').value = '';
-      showToast('🗑 Bin dihapus');
-    }
-  );
 }
 
 function addHistory(type,bin,name,qty,unit,before,after,note){
@@ -1031,45 +884,65 @@ function addHistory(type,bin,name,qty,unit,before,after,note){
   if(state.history.length>300) state.history.pop();
 }
 
-/* custom confirm — replaces window.confirm() which is blocked on GitHub Pages */
-let _confirmCallback = null;
+/* ═══════════════════════════════════════════════
+   CONFIRM DIALOG (replaces window.confirm)
+═══════════════════════════════════════════════ */
+let _confirmCb = null;
 function openConfirm(title, msg, onYes){
-  _confirmCallback = onYes;
+  _confirmCb = onYes;
   document.getElementById('confirm-title').textContent = title;
-  document.getElementById('confirm-msg').textContent = msg;
+  document.getElementById('confirm-msg').textContent   = msg;
   document.getElementById('confirm-overlay').classList.add('open');
 }
 function confirmYes(){
   document.getElementById('confirm-overlay').classList.remove('open');
-  if(_confirmCallback) _confirmCallback();
-  _confirmCallback = null;
+  if(_confirmCb) _confirmCb();
+  _confirmCb = null;
 }
 function confirmNo(){
   document.getElementById('confirm-overlay').classList.remove('open');
-  _confirmCallback = null;
+  _confirmCb = null;
 }
 
-function closeModal(){document.getElementById('modal-overlay').classList.remove('open');}
-function closeModalOutside(e){if(e.target===document.getElementById('modal-overlay'))closeModal();}
-
-/* ══════════════════════════════════════════════════════
-   BINS PAGE
-══════════════════════════════════════════════════════ */
-let activeFilter='all';
-function renderBins(filter='',catFilter=activeFilter){
-  const cats=[...new Set(state.bins.map(b=>b.cat))];
-  document.getElementById('cat-pills').innerHTML=
-    `<span class="pill ${catFilter==='all'?'active':''}" onclick="setCat('all')">All</span>`+
-    cats.map(c=>`<span class="pill ${catFilter===c?'active':''}" onclick="setCat('${c.replace(/'/g,"\\'")}')">
-      ${c.replace('Perlengkapan ','')}</span>`).join('');
-  const fl=filter.toLowerCase();
-  const list=state.bins.filter(b=>{
-    const catOk=catFilter==='all'||b.cat===catFilter;
-    const srchOk=!fl||b.id.toLowerCase().includes(fl)||b.cat.toLowerCase().includes(fl)
-                     ||b.items.some(it=>it.name.toLowerCase().includes(fl));
-    return catOk&&srchOk;
+function deleteItem(i){
+  openConfirm(`Hapus "${currentBin.items[i].name}"?`, 'Barang akan dihapus dari bin ini.', ()=>{
+    currentBin.items.splice(i,1);
+    saveState(); renderItemsTable(currentBin);
+    showToast('🗑 Barang dihapus');
   });
-  document.getElementById('bins-list').innerHTML=list.map(bin=>`
+}
+
+function confirmDeleteBin(){
+  openConfirm(`Hapus bin "${currentBin.id}"?`,
+    'Semua data barang dalam bin ini akan hilang.', ()=>{
+    state.bins = state.bins.filter(b=>b.id!==currentBin.id);
+    saveState(); closeModal();
+    currentBin = null;
+    document.getElementById('bin-panel').style.display = 'none';
+    document.getElementById('scan-input').value = '';
+    showToast('🗑 Bin dihapus');
+  });
+}
+
+/* ═══════════════════════════════════════════════
+   BINS PAGE
+═══════════════════════════════════════════════ */
+let activeFilter = 'all';
+function renderBins(filter='', catFilter=activeFilter){
+  const cats = [...new Set(state.bins.map(b=>b.cat))];
+  document.getElementById('cat-pills').innerHTML =
+    `<span class="pill ${catFilter==='all'?'active':''}" onclick="setCat('all')">Semua</span>` +
+    cats.map(c=>`<span class="pill ${catFilter===c?'active':''}"
+      onclick="setCat('${c.replace(/'/g,"\\'")}')">${c.replace('Perlengkapan ','')}</span>`).join('');
+  const fl = filter.toLowerCase();
+  const list = state.bins.filter(b=>{
+    const catOk  = catFilter==='all' || b.cat===catFilter;
+    const srchOk = !fl || b.id.toLowerCase().includes(fl) ||
+                   b.cat.toLowerCase().includes(fl) ||
+                   b.items.some(it=>it.name.toLowerCase().includes(fl));
+    return catOk && srchOk;
+  });
+  document.getElementById('bins-list').innerHTML = list.map(bin=>`
     <div class="card" style="padding:0;overflow:hidden;margin-bottom:12px;">
       <div class="bin-header" onclick="goScanBin('${bin.id}')" style="cursor:pointer;">
         <div class="cat"><h3>${bin.cat}</h3><p>${bin.id}</p></div>
@@ -1081,24 +954,24 @@ function renderBins(filter='',catFilter=activeFilter){
       </div>
       <div style="padding:8px 14px;font-size:12px;color:#666;display:flex;align-items:center;gap:10px;">
         <span style="flex:1;">📦 ${bin.items.length} items
-          ${bin.items.filter(i=>i.qty===0).length ? `&nbsp;·&nbsp;<span style="color:var(--red)">⚠️ ${bin.items.filter(i=>i.qty===0).length} empty</span>` : ''}
-          ${bin.items.filter(i=>i.qty>0&&i.qty<=2).length ? `&nbsp;·&nbsp;<span style="color:orange">🟡 low</span>` : ''}
+          ${bin.items.filter(i=>i.qty===0).length
+            ? `&nbsp;·&nbsp;<span style="color:var(--red)">⚠️ ${bin.items.filter(i=>i.qty===0).length} kosong</span>` : ''}
+          ${bin.items.filter(i=>i.qty>0&&i.qty<=2).length
+            ? `&nbsp;·&nbsp;<span style="color:orange">🟡 low</span>` : ''}
         </span>
         <button onclick="quickAddItem('${bin.id}')"
-          style="padding:5px 12px;background:#FFF7E6;color:#B45309;border:1px solid #FDE68A;
-                 border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">
-          ➕ Tambah
-        </button>
+          style="padding:5px 12px;background:#FFF7E6;color:#B45309;
+                 border:1px solid #FDE68A;border-radius:6px;font-size:12px;
+                 font-weight:700;cursor:pointer;">➕ Tambah</button>
         <button onclick="goScanBin('${bin.id}')"
-          style="padding:5px 12px;background:#EEF2FF;color:#3730A3;border:1px solid #C7D2FE;
-                 border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">
-          📋 Buka
-        </button>
+          style="padding:5px 12px;background:#EEF2FF;color:#3730A3;
+                 border:1px solid #C7D2FE;border-radius:6px;font-size:12px;
+                 font-weight:700;cursor:pointer;">📋 Buka</button>
       </div>
-    </div>`).join('')||'<div class="empty">No bins found.</div>';
+    </div>`).join('') || '<div class="empty">Tidak ada bin.</div>';
 }
-function setCat(c){activeFilter=c;renderBins(document.querySelector('.search-bar')?.value||'');}
-function filterBins(v){renderBins(v,activeFilter);}
+function setCat(c){ activeFilter=c; renderBins(document.querySelector('.search-bar')?.value||''); }
+function filterBins(v){ renderBins(v, activeFilter); }
 function quickAddItem(binId){
   const bin = state.bins.find(b=>b.id===binId);
   if(!bin) return;
@@ -1110,55 +983,61 @@ function goScanBin(id){
   document.querySelectorAll('.nav-tabs button').forEach(b=>b.classList.remove('active'));
   document.getElementById('page-scan').classList.add('active');
   document.querySelector('.nav-tabs button').classList.add('active');
-  document.getElementById('scan-input').value=id;
+  document.getElementById('scan-input').value = id;
   scanBin();
 }
 
-/* ══════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════
    HISTORY
-══════════════════════════════════════════════════════ */
+═══════════════════════════════════════════════ */
 function renderHistory(){
-  const icons={out:'📤',in:'📥',opname:'🔢'};
-  const labels={out:'Ambil',in:'Simpan',opname:'Opname'};
-  const el=document.getElementById('history-list');
-  if(!state.history.length){el.innerHTML='<div class="empty">No transactions yet.</div>';return;}
-  el.innerHTML=state.history.map(h=>{
-    const d=new Date(h.ts);
-    const ts=d.toLocaleDateString('id-ID',{day:'2-digit',month:'short'})+' '+
-             d.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
-    const qstr=h.type==='opname'?`${h.before}→${h.after}`:`${h.type==='out'?'-':'+'}${h.qty} ${h.unit}`;
-    return`<div class="history-item">
+  const icons = {out:'📤',in:'📥',opname:'🔢'};
+  const labels = {out:'Ambil',in:'Simpan',opname:'Opname'};
+  const el = document.getElementById('history-list');
+  if(!state.history.length){ el.innerHTML='<div class="empty">Belum ada transaksi.</div>'; return; }
+  el.innerHTML = state.history.map(h=>{
+    const d = new Date(h.ts);
+    const ts = d.toLocaleDateString('id-ID',{day:'2-digit',month:'short'}) + ' ' +
+               d.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
+    const q  = h.type==='opname'
+      ? `${h.before}→${h.after}`
+      : `${h.type==='out'?'-':'+'}${h.qty} ${h.unit}`;
+    return `<div class="history-item">
       <div class="hist-icon ${h.type}">${icons[h.type]}</div>
       <div class="hist-info">
         <div class="hist-name">${h.name}</div>
         <div class="hist-meta">${labels[h.type]} · ${h.binCat} (Rak ${h.rak}) · ${ts}</div>
         ${h.note?`<div class="hist-meta" style="font-style:italic;color:#bbb">${h.note}</div>`:''}
       </div>
-      <div class="hist-qty ${h.type}">${qstr}</div>
+      <div class="hist-qty ${h.type}">${q}</div>
     </div>`;
   }).join('');
 }
 
-/* ══════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════
    DASHBOARD
-══════════════════════════════════════════════════════ */
+═══════════════════════════════════════════════ */
 function renderDashboard(){
-  const all=state.bins.flatMap(b=>b.items);
-  const today=new Date();
-  const txToday=state.history.filter(h=>{const d=new Date(h.ts);
-    return d.getDate()===today.getDate()&&d.getMonth()===today.getMonth()&&d.getFullYear()===today.getFullYear();}).length;
-  document.getElementById('stats-grid').innerHTML=`
+  const all = state.bins.flatMap(b=>b.items);
+  const today = new Date();
+  const txToday = state.history.filter(h=>{
+    const d=new Date(h.ts);
+    return d.getDate()===today.getDate() &&
+           d.getMonth()===today.getMonth() &&
+           d.getFullYear()===today.getFullYear();
+  }).length;
+  document.getElementById('stats-grid').innerHTML = `
     <div class="stat-card green"><div class="stat-num">${state.bins.length}</div><div class="stat-label">Total Bins</div></div>
-    <div class="stat-card">     <div class="stat-num">${all.length}</div><div class="stat-label">Total Items</div></div>
-    <div class="stat-card red"> <div class="stat-num">${all.filter(i=>i.qty===0).length}</div><div class="stat-label">Out of Stock</div></div>
+    <div class="stat-card">     <div class="stat-num">${all.length}</div><div class="stat-label">Total Barang</div></div>
+    <div class="stat-card red"> <div class="stat-num">${all.filter(i=>i.qty===0).length}</div><div class="stat-label">Stok Habis</div></div>
     <div class="stat-card gold"><div class="stat-num">${txToday}</div><div class="stat-label">Transaksi Hari Ini</div></div>`;
-  const icons={out:'📤',in:'📥',opname:'🔢'};
-  const recent=state.history.slice(0,8);
-  document.getElementById('dash-activity').innerHTML=recent.length
-    ?recent.map(h=>{
+  const icons = {out:'📤',in:'📥',opname:'🔢'};
+  const recent = state.history.slice(0,8);
+  document.getElementById('dash-activity').innerHTML = recent.length
+    ? recent.map(h=>{
         const d=new Date(h.ts);
         const ts=d.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
-        return`<div class="history-item">
+        return `<div class="history-item">
           <div class="hist-icon ${h.type}">${icons[h.type]}</div>
           <div class="hist-info">
             <div class="hist-name">${h.name}</div>
@@ -1166,28 +1045,18 @@ function renderDashboard(){
           </div>
           <div class="hist-qty ${h.type}">${h.type==='out'?'-':h.type==='in'?'+':''}${h.qty} ${h.unit}</div>
         </div>`;}).join('')
-    :'<div class="empty">No activity yet.</div>';
+    : '<div class="empty">Belum ada aktivitas.</div>';
 }
 
-/* ══════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════
    TOAST
-══════════════════════════════════════════════════════ */
+═══════════════════════════════════════════════ */
 let toastTimer;
 function showToast(msg){
-  const t=document.getElementById('toast');
-  t.textContent=msg;t.classList.add('show');
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
   clearTimeout(toastTimer);
-  toastTimer=setTimeout(()=>t.classList.remove('show'),2500);
-}
-
-} catch(e) {
-  // Show user-friendly error instead of blank screen
-  document.body.innerHTML = '<div style="padding:40px;font-family:sans-serif;text-align:center;">'
-    + '<div style="font-size:48px;margin-bottom:16px;">⚠️</div>'
-    + '<h2 style="color:#1B2A3B;margin-bottom:8px;">Gagal memuat RumahStock</h2>'
-    + '<p style="color:#888;font-size:14px;">Error: ' + e.message + '</p>'
-    + '<p style="color:#888;font-size:13px;margin-top:16px;">Buka di browser (Chrome/Safari) untuk hasil terbaik.</p>'
-    + '</div>';
+  toastTimer = setTimeout(()=>t.classList.remove('show'), 2800);
 }
 </script>
 </body>

@@ -328,7 +328,7 @@ nav{background:var(--dark);color:#fff;display:flex;align-items:center;
 
 <!-- ══ CAMERA SCANNER FULLSCREEN ══ -->
 <div id="scanner-modal">
-  <video id="cam-video" autoplay playsinline muted></video>
+  <video id="cam-video" autoplay playsinline muted webkit-playsinline x5-playsinline></video>
   <canvas id="cam-canvas"></canvas>
   <div class="cam-overlay"></div>
   <div class="cam-frame">
@@ -604,7 +604,7 @@ loadState().then(loaded => {
 }).catch(()=>{});
 
 /* ══════════════════════════════════════════════════════
-   CAMERA SCANNER
+   CAMERA SCANNER — iOS 26 / Safari compatible
 ══════════════════════════════════════════════════════ */
 let camStream=null, scanLoop=null, torchOn=false, scanLocked=false;
 
@@ -612,61 +612,93 @@ async function openScanner(){
   const modal=document.getElementById('scanner-modal');
   modal.classList.add('open');
   scanLocked=false;
+  document.querySelector('.cam-hint').innerHTML=
+    'Point at the QR code on the bin label<small>Hold steady — scanning automatically</small>';
+
   try{
+    // iOS Safari needs exact constraint format
     const constraints={
-      video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}}
+      video:{
+        facingMode:'environment',
+        width:{ideal:1920},
+        height:{ideal:1080}
+      }
     };
     camStream=await navigator.mediaDevices.getUserMedia(constraints);
     const video=document.getElementById('cam-video');
     video.srcObject=camStream;
+    // iOS requires these attributes set before play
+    video.setAttribute('playsinline','true');
+    video.setAttribute('muted','true');
+    video.muted=true;
+    await new Promise((res,rej)=>{
+      video.onloadedmetadata=()=>res();
+      video.onerror=rej;
+      setTimeout(res,3000); // timeout fallback
+    });
     await video.play();
     startDecodeLoop();
   }catch(err){
     closeScanner();
-    showToast('⚠️ Camera access denied — use Manual Entry');
+    const msg = err.name==='NotAllowedError'
+      ? '⚠️ Izin kamera ditolak — buka Settings > Safari > Camera > Allow'
+      : '⚠️ Kamera tidak tersedia — gunakan Manual Entry';
+    showToast(msg);
+    // Show the error in a more visible way
+    document.getElementById('bin-panel').style.display='none';
+    document.getElementById('no-bin').style.display='none';
+    const hero=document.querySelector('.scan-hero p');
+    if(hero) hero.innerHTML='<span style="color:#E8B84B">'+msg+'</span>';
   }
 }
 
 function closeScanner(){
   document.getElementById('scanner-modal').classList.remove('open');
   if(scanLoop){cancelAnimationFrame(scanLoop);scanLoop=null;}
-  if(camStream){camStream.getTracks().forEach(t=>t.stop());camStream=null;}
+  if(camStream){camStream.getTracks().forEach(t=>{try{t.stop();}catch(e){}});camStream=null;}
   torchOn=false;
-  document.getElementById('torch-btn').classList.remove('torch-on');
-  document.getElementById('cam-result-pill').classList.remove('show');
+  try{document.getElementById('torch-btn').classList.remove('torch-on');}catch(e){}
+  try{document.getElementById('cam-result-pill').classList.remove('show');}catch(e){}
 }
 
 function startDecodeLoop(){
   const video  = document.getElementById('cam-video');
   const canvas = document.getElementById('cam-canvas');
-  const ctx    = canvas.getContext('2d', {willReadFrequently:true});
+  const ctx    = canvas.getContext('2d',{willReadFrequently:true});
 
-  // Check BarcodeDetector support
-  if(!window.BarcodeDetector){
-    // Not supported — show friendly hint inside the viewfinder
+  // Check what's available
+  const hasBarcodeDetector = typeof BarcodeDetector !== 'undefined';
+  let bd = null;
+  if(hasBarcodeDetector){
+    try{ bd = new BarcodeDetector({formats:['qr_code']}); }catch(e){ bd=null; }
+  }
+
+  // If nothing available show message
+  if(!bd){
     document.querySelector('.cam-hint').innerHTML =
-      'Camera scan not supported on this browser.<br>' +
-      '<small>Use Manual Entry, or try Chrome on Android / Safari iOS 17+</small>';
+      'QR scan not supported on this browser<br>'+
+      '<small>Use Manual Entry below — type the Bin ID</small>';
     return;
   }
 
-  const bd = new BarcodeDetector({formats:['qr_code']});
-
+  let frameCount=0;
   function tick(){
     if(!camStream) return;
-    if(video.readyState === video.HAVE_ENOUGH_DATA){
-      canvas.width  = video.videoWidth;
-      canvas.height = video.videoHeight;
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      if(!scanLocked){
-        bd.detect(canvas).then(codes => {
-          if(codes.length > 0) handleScanResult(codes[0].rawValue);
-        }).catch(()=>{});
+    frameCount++;
+    // Only decode every 8 frames to save battery
+    if(frameCount % 8 === 0 && video.readyState >= 2){
+      canvas.width  = video.videoWidth  || 640;
+      canvas.height = video.videoHeight || 480;
+      ctx.drawImage(video,0,0,canvas.width,canvas.height);
+      if(!scanLocked && bd){
+        bd.detect(canvas)
+          .then(codes=>{ if(codes.length>0) handleScanResult(codes[0].rawValue); })
+          .catch(()=>{});
       }
     }
-    scanLoop = requestAnimationFrame(tick);
+    scanLoop=requestAnimationFrame(tick);
   }
-  scanLoop = requestAnimationFrame(tick);
+  scanLoop=requestAnimationFrame(tick);
 }
 
 function handleScanResult(raw){

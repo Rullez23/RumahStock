@@ -993,7 +993,7 @@ function confirmDeleteBin(){
   );
 }
 
-
+function addHistory(type,bin,name,qty,unit,before,after,note){
   state.history.unshift({type,binId:bin.id,binCat:bin.cat,rak:bin.rak,kotak:bin.kotak,
     name,qty,unit,before,after,note,ts:new Date().toISOString()});
   if(state.history.length>300) state.history.pop();
@@ -1038,8 +1038,8 @@ function renderBins(filter='',catFilter=activeFilter){
     return catOk&&srchOk;
   });
   document.getElementById('bins-list').innerHTML=list.map(bin=>`
-    <div class="card" style="padding:0;overflow:hidden;cursor:pointer" onclick="goScanBin('${bin.id}')">
-      <div class="bin-header">
+    <div class="card" style="padding:0;overflow:hidden;margin-bottom:12px;">
+      <div class="bin-header" onclick="goScanBin('${bin.id}')" style="cursor:pointer;">
         <div class="cat"><h3>${bin.cat}</h3><p>${bin.id}</p></div>
         <div class="rak-box">
           <div class="rak-label">RAK</div>
@@ -1047,15 +1047,32 @@ function renderBins(filter='',catFilter=activeFilter){
           <div class="rak-kotak">Kotak ${bin.kotak}</div>
         </div>
       </div>
-      <div style="padding:8px 14px;font-size:12px;color:#666;display:flex;gap:12px;">
-        <span>📦 ${bin.items.length} items</span>
-        ${bin.items.filter(i=>i.qty===0).length?`<span style="color:var(--red)">⚠️ ${bin.items.filter(i=>i.qty===0).length} empty</span>`:''}
-        ${bin.items.filter(i=>i.qty>0&&i.qty<=2).length?`<span style="color:orange">🟡 ${bin.items.filter(i=>i.qty>0&&i.qty<=2).length} low</span>`:''}
+      <div style="padding:8px 14px;font-size:12px;color:#666;display:flex;align-items:center;gap:10px;">
+        <span style="flex:1;">📦 ${bin.items.length} items
+          ${bin.items.filter(i=>i.qty===0).length ? `&nbsp;·&nbsp;<span style="color:var(--red)">⚠️ ${bin.items.filter(i=>i.qty===0).length} empty</span>` : ''}
+          ${bin.items.filter(i=>i.qty>0&&i.qty<=2).length ? `&nbsp;·&nbsp;<span style="color:orange">🟡 low</span>` : ''}
+        </span>
+        <button onclick="quickAddItem('${bin.id}')"
+          style="padding:5px 12px;background:#FFF7E6;color:#B45309;border:1px solid #FDE68A;
+                 border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">
+          ➕ Tambah
+        </button>
+        <button onclick="goScanBin('${bin.id}')"
+          style="padding:5px 12px;background:#EEF2FF;color:#3730A3;border:1px solid #C7D2FE;
+                 border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">
+          📋 Buka
+        </button>
       </div>
     </div>`).join('')||'<div class="empty">No bins found.</div>';
 }
 function setCat(c){activeFilter=c;renderBins(document.querySelector('.search-bar')?.value||'');}
 function filterBins(v){renderBins(v,activeFilter);}
+function quickAddItem(binId){
+  const bin = state.bins.find(b=>b.id===binId);
+  if(!bin) return;
+  currentBin = bin;
+  openModal('additem');
+}
 function goScanBin(id){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-tabs button').forEach(b=>b.classList.remove('active'));

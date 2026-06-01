@@ -4,8 +4,6 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
 <title>RumahStock</title>
-<!-- jsQR for QR decoding from camera frames -->
-<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 <style>
 :root {
   --dark:#1B2A3B; --mid:#2E4057; --teal:#048A81; --teal2:#06B8AD;
@@ -217,6 +215,7 @@ nav{background:var(--dark);color:#fff;display:flex;align-items:center;
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);
     z-index:200;align-items:flex-end;justify-content:center;padding:0;}
 .modal-overlay.open{display:flex;}
+#confirm-overlay.open{display:flex;}
 .modal{background:#fff;border-radius:20px 20px 0 0;width:100%;max-width:500px;
     overflow:hidden;box-shadow:0 -8px 40px rgba(0,0,0,.25);
     max-height:90vh;overflow-y:auto;}
@@ -224,6 +223,9 @@ nav{background:var(--dark);color:#fff;display:flex;align-items:center;
 .modal-head.out   {background:var(--red);}
 .modal-head.in    {background:var(--green);}
 .modal-head.opname{background:#3730A3;}
+.modal-head.additem{background:#B45309;}
+.modal-head.editbin{background:#3730A3;}
+.modal-head.newbin {background:var(--teal);}
 .modal-body{padding:20px;}
 .modal-body label{font-size:12px;font-weight:700;color:var(--mid);
     display:block;margin-bottom:4px;margin-top:14px;}
@@ -384,8 +386,19 @@ nav{background:var(--dark);color:#fff;display:flex;align-items:center;
           <span class="icon">🔢</span>OPNAME
         </button>
       </div>
+      <!-- manage row -->
+      <div style="display:flex;gap:8px;margin-bottom:12px;">
+        <button class="action-btn" style="flex:1;background:#FFF7E6;color:#B45309;border-radius:8px;padding:9px;"
+                onclick="openModal('additem')">
+          <span class="icon" style="font-size:16px;">➕</span>Tambah Barang
+        </button>
+        <button class="action-btn" style="flex:1;background:#F0F4FF;color:#3730A3;border-radius:8px;padding:9px;"
+                onclick="openModal('editbin')">
+          <span class="icon" style="font-size:16px;">✏️</span>Edit Bin
+        </button>
+      </div>
       <table class="items-table">
-        <thead><tr><th>#</th><th>Nama Barang</th><th>Qty</th><th>Unit</th></tr></thead>
+        <thead><tr><th>#</th><th>Nama Barang</th><th>Qty</th><th>Unit</th><th></th></tr></thead>
         <tbody id="items-body"></tbody>
       </table>
     </div>
@@ -397,6 +410,13 @@ nav{background:var(--dark);color:#fff;display:flex;align-items:center;
 
 <!-- ══ BINS PAGE ══ -->
 <div id="page-bins" class="page">
+  <button onclick="openModal('newbin')"
+    style="width:100%;margin-bottom:12px;padding:14px;background:var(--teal);color:#fff;
+           border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;
+           display:flex;align-items:center;justify-content:center;gap:8px;
+           box-shadow:0 3px 12px rgba(4,138,129,.35);">
+    ➕ Tambah Bin Baru
+  </button>
   <input class="search-bar" placeholder="🔍  Search bin or item name…" oninput="filterBins(this.value)"/>
   <div class="pill-row" id="cat-pills"></div>
   <div id="bins-list"></div>
@@ -428,9 +448,31 @@ nav{background:var(--dark);color:#fff;display:flex;align-items:center;
   </div>
 </div>
 
+<!-- ══ CONFIRM DIALOG ══ -->
+<div id="confirm-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);
+     z-index:400;align-items:center;justify-content:center;padding:24px;">
+  <div style="background:#fff;border-radius:16px;width:100%;max-width:340px;overflow:hidden;
+              box-shadow:0 20px 60px rgba(0,0,0,.3);">
+    <div style="padding:20px 20px 4px;">
+      <div id="confirm-title" style="font-size:16px;font-weight:700;color:var(--dark);margin-bottom:8px;"></div>
+      <div id="confirm-msg"   style="font-size:13px;color:#666;"></div>
+    </div>
+    <div style="display:flex;gap:8px;padding:16px 20px 20px;">
+      <button onclick="confirmNo()"
+        style="flex:1;padding:12px;border:none;border-radius:8px;background:#f0f0f0;
+               color:#555;font-size:14px;font-weight:700;cursor:pointer;">Batal</button>
+      <button onclick="confirmYes()"
+        style="flex:1;padding:12px;border:none;border-radius:8px;background:var(--red);
+               color:#fff;font-size:14px;font-weight:700;cursor:pointer;">Hapus</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
+try {
+
 /* ══════════════════════════════════════════════════════
    INITIAL DATA
 ══════════════════════════════════════════════════════ */
@@ -521,13 +563,45 @@ const BINS_INITIAL = [
 /* ══════════════════════════════════════════════════════
    STATE
 ══════════════════════════════════════════════════════ */
-function loadState(){
-  try{const s=localStorage.getItem('rumahstock_v2');if(s)return JSON.parse(s);}catch(e){}
-  return{bins:JSON.parse(JSON.stringify(BINS_INITIAL)),history:[]};
+/* ══════════════════════════════════════════════════════
+   STATE — uses window.storage (artifact) or localStorage
+══════════════════════════════════════════════════════ */
+// In-memory fallback store
+let _memStore = {};
+
+async function loadState(){
+  // Try window.storage (Claude artifact API)
+  try {
+    if(window.storage){
+      const r = await window.storage.get('rumahstock_state');
+      if(r && r.value) return JSON.parse(r.value);
+    }
+  } catch(e){}
+  // Try localStorage
+  try {
+    const s = localStorage.getItem('rumahstock_v2');
+    if(s) return JSON.parse(s);
+  } catch(e){}
+  return {bins:JSON.parse(JSON.stringify(BINS_INITIAL)), history:[]};
 }
-function saveState(){try{localStorage.setItem('rumahstock_v2',JSON.stringify(state));}catch(e){}}
-let state=loadState();
-let currentBin=null;
+
+function saveState(){
+  // Try window.storage (Claude artifact API)
+  try {
+    if(window.storage){
+      window.storage.set('rumahstock_state', JSON.stringify(state));
+    }
+  } catch(e){}
+  // Try localStorage as bonus
+  try { localStorage.setItem('rumahstock_v2', JSON.stringify(state)); } catch(e){}
+}
+
+let state = {bins:JSON.parse(JSON.stringify(BINS_INITIAL)), history:[]};
+let currentBin = null;
+// Load async state then re-render if data found
+loadState().then(loaded => {
+  state = loaded;
+}).catch(()=>{});
 
 /* ══════════════════════════════════════════════════════
    CAMERA SCANNER
@@ -563,35 +637,36 @@ function closeScanner(){
 }
 
 function startDecodeLoop(){
-  const video=document.getElementById('cam-video');
-  const canvas=document.getElementById('cam-canvas');
-  const ctx=canvas.getContext('2d',{willReadFrequently:true});
+  const video  = document.getElementById('cam-video');
+  const canvas = document.getElementById('cam-canvas');
+  const ctx    = canvas.getContext('2d', {willReadFrequently:true});
+
+  // Check BarcodeDetector support
+  if(!window.BarcodeDetector){
+    // Not supported — show friendly hint inside the viewfinder
+    document.querySelector('.cam-hint').innerHTML =
+      'Camera scan not supported on this browser.<br>' +
+      '<small>Use Manual Entry, or try Chrome on Android / Safari iOS 17+</small>';
+    return;
+  }
+
+  const bd = new BarcodeDetector({formats:['qr_code']});
 
   function tick(){
-    if(!camStream){return;}
-    if(video.readyState===video.HAVE_ENOUGH_DATA){
-      canvas.width=video.videoWidth;
-      canvas.height=video.videoHeight;
-      ctx.drawImage(video,0,0,canvas.width,canvas.height);
-
-      // Try BarcodeDetector first (native, fast)
-      if(window.BarcodeDetector && !scanLocked){
-        const bd=new BarcodeDetector({formats:['qr_code']});
-        bd.detect(canvas).then(codes=>{
-          if(codes.length>0) handleScanResult(codes[0].rawValue);
+    if(!camStream) return;
+    if(video.readyState === video.HAVE_ENOUGH_DATA){
+      canvas.width  = video.videoWidth;
+      canvas.height = video.videoHeight;
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      if(!scanLocked){
+        bd.detect(canvas).then(codes => {
+          if(codes.length > 0) handleScanResult(codes[0].rawValue);
         }).catch(()=>{});
       }
-
-      // jsQR fallback
-      if(window.jsQR && !scanLocked){
-        const imageData=ctx.getImageData(0,0,canvas.width,canvas.height);
-        const code=jsQR(imageData.data,imageData.width,imageData.height,{inversionAttempts:'dontInvert'});
-        if(code) handleScanResult(code.data);
-      }
     }
-    scanLoop=requestAnimationFrame(tick);
+    scanLoop = requestAnimationFrame(tick);
   }
-  scanLoop=requestAnimationFrame(tick);
+  scanLoop = requestAnimationFrame(tick);
 }
 
 function handleScanResult(raw){
@@ -674,12 +749,16 @@ function renderBinHeader(bin){
 
 function renderItemsTable(bin){
   const tbody=document.getElementById('items-body');
-  if(!bin.items.length){tbody.innerHTML='<tr><td colspan="4" class="empty">No items.</td></tr>';return;}
+  if(!bin.items.length){tbody.innerHTML='<tr><td colspan="5" class="empty">Belum ada barang — tap Tambah Barang.</td></tr>';return;}
   tbody.innerHTML=bin.items.map((it,i)=>{
     const cls=it.qty===0?'zero':it.qty<=2?'low':'';
-    return`<tr><td>${i+1}</td><td>${it.name}</td>
+    return`<tr>
+      <td>${i+1}</td>
+      <td>${it.name}</td>
       <td><span class="qty-badge ${cls}">${it.qty}</span></td>
-      <td>${it.unit}</td></tr>`;
+      <td>${it.unit}</td>
+      <td><button onclick="deleteItem(${i})" style="background:none;border:none;font-size:15px;cursor:pointer;color:#ccc;padding:2px 4px;" title="Hapus">🗑</button></td>
+    </tr>`;
   }).join('');
 }
 
@@ -700,10 +779,14 @@ function showPage(id,btn){
    MODALS
 ══════════════════════════════════════════════════════ */
 function openModal(type){
-  if(!currentBin) return;
+  if((type==='out'||type==='in'||type==='opname'||type==='additem'||type==='editbin')&&!currentBin) return;
   const bin=currentBin;
-  const labels={out:'📤 AMBIL BARANG',in:'📥 SIMPAN BARANG',opname:'🔢 STOCK OPNAME'};
-  document.getElementById('modal-head').className='modal-head '+type;
+  const labels={
+    out:'📤 AMBIL BARANG', in:'📥 SIMPAN BARANG', opname:'🔢 STOCK OPNAME',
+    additem:'➕ TAMBAH BARANG', editbin:'✏️ EDIT BIN', newbin:'📦 TAMBAH BIN BARU'
+  };
+  const headColors={out:'out',in:'in',opname:'opname',additem:'additem',editbin:'editbin',newbin:'newbin'};
+  document.getElementById('modal-head').className='modal-head '+(headColors[type]||type);
   document.getElementById('modal-head').textContent=labels[type];
 
   if(type==='out'||type==='in'){
@@ -720,7 +803,8 @@ function openModal(type){
     document.getElementById('modal-footer').innerHTML=`
       <button class="btn-cancel" onclick="closeModal()">Batal</button>
       <button class="btn-confirm-${type}" onclick="confirmTx('${type}')">${type==='out'?'✅ Ambil':'✅ Simpan'}</button>`;
-  } else {
+
+  } else if(type==='opname'){
     const rows=bin.items.map((it,i)=>`
       <div class="opname-row">
         <div class="opname-name">${it.name}</div>
@@ -739,6 +823,63 @@ function openModal(type){
     document.getElementById('modal-footer').innerHTML=`
       <button class="btn-cancel" onclick="closeModal()">Batal</button>
       <button class="btn-confirm-opname" onclick="confirmOpname()">✅ Simpan Opname</button>`;
+
+  } else if(type==='additem'){
+    document.getElementById('modal-body').innerHTML=`
+      <label>Nama Barang</label>
+      <input type="text" id="ai-name" placeholder="Contoh: Sabun Mandi" autocomplete="off"/>
+      <label>Qty Awal</label>
+      <input type="number" id="ai-qty" min="0" value="0" inputmode="numeric"/>
+      <label>Unit</label>
+      <input type="text" id="ai-unit" placeholder="Contoh: Pcs, Pack, Bte, Pouch"/>`;
+    document.getElementById('modal-footer').innerHTML=`
+      <button class="btn-cancel" onclick="closeModal()">Batal</button>
+      <button class="btn-confirm-in" onclick="confirmAddItem()">✅ Tambah</button>`;
+
+  } else if(type==='editbin'){
+    document.getElementById('modal-body').innerHTML=`
+      <label>Nama Kategori</label>
+      <input type="text" id="eb-cat" value="${bin.cat}"/>
+      <label>Rak</label>
+      <input type="text" id="eb-rak" value="${bin.rak}" placeholder="Contoh: D3"/>
+      <label>Kotak</label>
+      <input type="text" id="eb-kotak" value="${bin.kotak}" placeholder="Contoh: 5"/>
+      <label style="margin-top:20px;color:var(--red);">⚠️ Zona Bahaya</label>
+      <button onclick="confirmDeleteBin()"
+        style="width:100%;padding:12px;background:#FEE2E2;color:var(--red);border:1.5px solid #FECACA;
+               border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;margin-top:4px;">
+        🗑 Hapus Bin Ini
+      </button>`;
+    document.getElementById('modal-footer').innerHTML=`
+      <button class="btn-cancel" onclick="closeModal()">Batal</button>
+      <button class="btn-confirm-opname" onclick="confirmEditBin()">✅ Simpan</button>`;
+
+  } else if(type==='newbin'){
+    document.getElementById('modal-body').innerHTML=`
+      <label>Nama Kategori</label>
+      <input type="text" id="nb-cat" placeholder="Contoh: Perlengkapan Dapur"/>
+      <label>Rak</label>
+      <input type="text" id="nb-rak" placeholder="Contoh: A1"/>
+      <label>Kotak</label>
+      <input type="text" id="nb-kotak" placeholder="Contoh: 3"/>
+      <label>Bin ID <span style="font-weight:400;color:#aaa;">(auto-generated, bisa diubah)</span></label>
+      <input type="text" id="nb-id" placeholder="BIN-DAP-A1-03"/>`;
+    // Auto-generate ID as user types
+    setTimeout(()=>{
+      const catEl=document.getElementById('nb-cat');
+      const rakEl=document.getElementById('nb-rak');
+      const kotakEl=document.getElementById('nb-kotak');
+      function genId(){
+        const c=(catEl.value.trim().split(' ')[0]||'BIN').substring(0,3).toUpperCase();
+        const r=(rakEl.value.trim()||'X').toUpperCase();
+        const k=(kotakEl.value.trim()||'0').toUpperCase();
+        document.getElementById('nb-id').value=`BIN-${c}-${r}-${k}`;
+      }
+      catEl.oninput=rakEl.oninput=kotakEl.oninput=genId;
+    },50);
+    document.getElementById('modal-footer').innerHTML=`
+      <button class="btn-cancel" onclick="closeModal()">Batal</button>
+      <button class="btn-confirm-in" onclick="confirmNewBin()">✅ Buat Bin</button>`;
   }
   document.getElementById('modal-overlay').classList.add('open');
 }
@@ -783,10 +924,97 @@ function confirmOpname(){
   showToast(`✅ Opname selesai — ${changes.length} item diperbarui`);
 }
 
-function addHistory(type,bin,name,qty,unit,before,after,note){
+function confirmAddItem(){
+  const name=document.getElementById('ai-name').value.trim();
+  const qty=parseInt(document.getElementById('ai-qty').value)||0;
+  const unit=document.getElementById('ai-unit').value.trim();
+  if(!name){showToast('⚠️ Nama barang tidak boleh kosong');return;}
+  currentBin.items.push({name,qty,unit});
+  saveState(); renderItemsTable(currentBin); closeModal();
+  showToast(`✅ "${name}" ditambahkan ke bin`);
+}
+
+function confirmEditBin(){
+  const cat=document.getElementById('eb-cat').value.trim();
+  const rak=document.getElementById('eb-rak').value.trim();
+  const kotak=document.getElementById('eb-kotak').value.trim();
+  if(!cat||!rak){showToast('⚠️ Kategori dan Rak tidak boleh kosong');return;}
+  currentBin.cat=cat; currentBin.rak=rak; currentBin.kotak=kotak;
+  saveState(); renderBinHeader(currentBin); closeModal();
+  showToast('✅ Bin berhasil diperbarui');
+}
+
+function confirmNewBin(){
+  const cat=document.getElementById('nb-cat').value.trim();
+  const rak=document.getElementById('nb-rak').value.trim();
+  const kotak=document.getElementById('nb-kotak').value.trim();
+  const id=document.getElementById('nb-id').value.trim().toUpperCase();
+  if(!cat||!rak||!id){showToast('⚠️ Semua field wajib diisi');return;}
+  if(state.bins.find(b=>b.id===id)){showToast('⚠️ Bin ID sudah ada, ganti ID-nya');return;}
+  const newBin={id,cat,rak,kotak,items:[]};
+  state.bins.push(newBin);
+  saveState(); closeModal();
+  showToast(`✅ Bin "${id}" berhasil dibuat`);
+  // Navigate to the new bin
+  currentBin=newBin;
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-tabs button').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-scan').classList.add('active');
+  document.querySelector('.nav-tabs button').classList.add('active');
+  document.getElementById('scan-input').value=id;
+  loadBin(newBin);
+}
+
+function deleteItem(i){
+  const name = currentBin.items[i].name;
+  openConfirm(
+    `Hapus "${name}"?`,
+    'Barang ini akan dihapus dari bin.',
+    () => {
+      currentBin.items.splice(i, 1);
+      saveState(); renderItemsTable(currentBin);
+      showToast('🗑 Barang dihapus');
+    }
+  );
+}
+
+function confirmDeleteBin(){
+  openConfirm(
+    `Hapus bin "${currentBin.id}"?`,
+    'Seluruh data barang dalam bin ini akan hilang permanen.',
+    () => {
+      state.bins = state.bins.filter(b => b.id !== currentBin.id);
+      saveState(); closeModal();
+      currentBin = null;
+      document.getElementById('bin-panel').style.display = 'none';
+      document.getElementById('scan-input').value = '';
+      showToast('🗑 Bin dihapus');
+    }
+  );
+}
+
+
   state.history.unshift({type,binId:bin.id,binCat:bin.cat,rak:bin.rak,kotak:bin.kotak,
     name,qty,unit,before,after,note,ts:new Date().toISOString()});
   if(state.history.length>300) state.history.pop();
+}
+
+/* custom confirm — replaces window.confirm() which is blocked on GitHub Pages */
+let _confirmCallback = null;
+function openConfirm(title, msg, onYes){
+  _confirmCallback = onYes;
+  document.getElementById('confirm-title').textContent = title;
+  document.getElementById('confirm-msg').textContent = msg;
+  document.getElementById('confirm-overlay').classList.add('open');
+}
+function confirmYes(){
+  document.getElementById('confirm-overlay').classList.remove('open');
+  if(_confirmCallback) _confirmCallback();
+  _confirmCallback = null;
+}
+function confirmNo(){
+  document.getElementById('confirm-overlay').classList.remove('open');
+  _confirmCallback = null;
 }
 
 function closeModal(){document.getElementById('modal-overlay').classList.remove('open');}
@@ -901,6 +1129,16 @@ function showToast(msg){
   t.textContent=msg;t.classList.add('show');
   clearTimeout(toastTimer);
   toastTimer=setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+} catch(e) {
+  // Show user-friendly error instead of blank screen
+  document.body.innerHTML = '<div style="padding:40px;font-family:sans-serif;text-align:center;">'
+    + '<div style="font-size:48px;margin-bottom:16px;">⚠️</div>'
+    + '<h2 style="color:#1B2A3B;margin-bottom:8px;">Gagal memuat RumahStock</h2>'
+    + '<p style="color:#888;font-size:14px;">Error: ' + e.message + '</p>'
+    + '<p style="color:#888;font-size:13px;margin-top:16px;">Buka di browser (Chrome/Safari) untuk hasil terbaik.</p>'
+    + '</div>';
 }
 </script>
 </body>

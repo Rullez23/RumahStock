@@ -4,7 +4,9 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
 <title>RumahStock</title>
-<!-- Firebase loaded dynamically in JS to prevent blocking app on load -->
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <style>
 :root{
   --dark:#1B2A3B;--mid:#2E4057;--teal:#048A81;--gold:#E8B84B;
@@ -828,71 +830,50 @@ function applyRoleUI(){
 ═══════════════════════════════════════════════════ */
 function initFirebase(){
   setSyncStatus('syncing');
-
-  // Load Firebase SDK dynamically — if it fails, app still works offline
-  function loadScript(src){
-    return new Promise((res, rej)=>{
-      const s = document.createElement('script');
-      s.src = src; s.onload = res; s.onerror = rej;
-      document.head.appendChild(s);
-    });
-  }
-
-  Promise.all([
-    loadScript('https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js'),
-    loadScript('https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js')
-  ]).then(()=>{
-    try{
-      if(!firebase.apps.length){
-        firebase.initializeApp(FIREBASE_CONFIG);
-      }
-      db    = firebase.database();
-      dbRef = db.ref('rumahstock');
-
-      dbRef.on('value', snap => {
-        const data = snap.val();
-        if(data && data.bins){
-          state = normalizeState(data);
-          if(!state.history) state.history = [];
-          const activePage = document.querySelector('.page.active');
-          if(activePage){
-            const pid = activePage.id.replace('page-','');
-            if(pid==='bins') renderBins();
-            if(pid==='history') renderHistory();
-            if(pid==='dashboard') renderDashboard();
-            if(pid==='reports') renderReportsPage();
-            if(pid==='scan' && currentBin){
-              const refreshed = state.bins.find(b=>b.id===currentBin.id);
-              if(refreshed){ currentBin=refreshed; renderItemsTable(refreshed); }
-            }
-          }
-          setSyncStatus('online');
-        } else {
-          dbRef.set(state).then(()=>setSyncStatus('online')).catch(()=>setSyncStatus('offline'));
-        }
-      }, err => {
-        setSyncStatus('offline');
-        showToast('⚠️ Tidak bisa tersambung ke database — mode offline');
-      });
-
-      db.ref('.info/connected').on('value', snap => {
-        setSyncStatus(snap.val() ? 'online' : 'offline');
-      });
-
-    }catch(e){
-      setSyncStatus('offline');
-      showToast('⚠️ Firebase error — mode offline aktif');
+  try{
+    // Init only once
+    if(!firebase.apps.length){
+      firebase.initializeApp(FIREBASE_CONFIG);
     }
-  }).catch(()=>{
-    // Firebase SDK failed to load (no internet / sandbox) — run fully offline
+    db    = firebase.database();
+    dbRef = db.ref('rumahstock');
+
+    // Listen for real-time updates
+    dbRef.on('value', snap => {
+      const data = snap.val();
+      if(data && data.bins){
+        state = normalizeState(data);
+        if(!state.history) state.history = [];
+        // Refresh current view
+        const activePage = document.querySelector('.page.active');
+        if(activePage){
+          const pid = activePage.id.replace('page-','');
+          if(pid==='bins') renderBins();
+          if(pid==='history') renderHistory();
+          if(pid==='dashboard') renderDashboard();
+          if(pid==='scan' && currentBin){
+            const refreshed = state.bins.find(b=>b.id===currentBin.id);
+            if(refreshed){ currentBin=refreshed; renderItemsTable(refreshed); }
+          }
+        }
+        setSyncStatus('online');
+      } else {
+        // First time — push initial data
+        dbRef.set(state).then(()=>setSyncStatus('online')).catch(()=>setSyncStatus('offline'));
+      }
+    }, err => {
+      setSyncStatus('offline');
+      showToast('⚠️ Tidak bisa tersambung ke database');
+    });
+
+    db.ref('.info/connected').on('value', snap => {
+      setSyncStatus(snap.val() ? 'online' : 'offline');
+    });
+
+  }catch(e){
     setSyncStatus('offline');
-    showToast('📴 Mode offline — data tersimpan lokal');
-    // Load from localStorage fallback
-    try{
-      const s = localStorage.getItem('rs_offline');
-      if(s){ state = normalizeState(JSON.parse(s)); }
-    }catch(e){}
-  });
+    showToast('⚠️ Firebase belum dikonfigurasi — gunakan mode offline');
+  }
 }
 
 function saveState(){
@@ -2330,9 +2311,7 @@ function renderInvByItem(fromD, toD, catFilter, periodLabel){
   const hist = ensureArray(state.history).filter(h=>{
     const d=new Date(h.ts); return d>=fromD && d<=toD;
   });
-
-  // Build item matrix
-  const matrix = {};
+  bins.forEach(bin=>{
     ensureArray(bin.items).forEach(it=>{
       const key = it.name.toLowerCase().trim();
       if(!matrix[key]) matrix[key]={
@@ -2607,6 +2586,32 @@ function renderInvByBin(fromD, toD, catFilter, binFilter, periodLabel){
     </div>
     <div style="font-size:11px;color:#888;margin-bottom:10px;">Periode: ${periodLabel}</div>
     ${binBlocks}`;
+}
+
+
+  const content = document.getElementById('inv-report-content');
+  if(!content||!content.innerHTML.trim()){showToast('Generate report dulu');return;}
+  const now = new Date().toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'});
+  const w=window.open('','_blank','width=750,height=950');
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"/>
+  <title>Inventory Report</title>
+  <style>
+    body{margin:12mm;font-family:'Segoe UI',Arial,sans-serif;font-size:12px;color:#1B2A3B;}
+    @media print{@page{margin:10mm;size:A4 portrait;}}
+    div[id^="inv-d-"]{display:none!important;}
+  </style></head><body>
+  <div style="border-bottom:3px solid #1B2A3B;padding-bottom:10px;margin-bottom:14px;
+              display:flex;justify-content:space-between;align-items:flex-end;">
+    <div>
+      <div style="font-size:10px;color:#888;font-weight:700;letter-spacing:1px;text-transform:uppercase;">INVENTORY REPORT</div>
+      <div style="font-size:18px;font-weight:900;">RumahStock</div>
+    </div>
+    <div style="text-align:right;font-size:11px;color:#888;">Dicetak: ${now}</div>
+  </div>
+  ${content.innerHTML}
+  <scr`+`ipt>window.onload=function(){window.print();}<\/scr`+`ipt>
+  </body></html>`);
+  w.document.close();
 }
 
 

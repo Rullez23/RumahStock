@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<title>RumahStock</title>
+<!-- jsQR for QR decoding from camera frames -->
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+<style>
+:root {
+  --dark:#1B2A3B; --mid:#2E4057; --teal:#048A81; --teal2:#06B8AD;
+  --gold:#E8B84B; --light:#EAF4F4; --lgray:#F7F7F7; --gray:#BBBBBB;
+  --red:#E05252; --green:#3CB371; --white:#FFFFFF; --text:#1B2A3B;
+}
+*{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',sans-serif;-webkit-tap-highlight-color:transparent;}
+body{background:#f0f4f7;color:var(--text);min-height:100vh;overscroll-behavior:none;}
+
+/* ── NAV ── */
+nav{background:var(--dark);color:#fff;display:flex;align-items:center;
+    justify-content:space-between;padding:0 12px;height:54px;
+    position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.3);}
+.logo{font-size:19px;font-weight:800;letter-spacing:.5px;}
+.logo span{color:var(--gold);}
+.nav-tabs{display:flex;gap:2px;}
+.nav-tabs button{background:none;border:none;color:rgba(255,255,255,.6);
+    padding:6px 10px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;
+    transition:all .2s;display:flex;flex-direction:column;align-items:center;gap:1px;}
+.nav-tabs button .nav-icon{font-size:16px;}
+.nav-tabs button.active,.nav-tabs button:hover{background:var(--teal);color:#fff;}
+
+/* ── PAGES ── */
+.page{display:none;padding:14px;max-width:900px;margin:0 auto;}
+.page.active{display:block;}
+
+/* ══════════════════════════════════════════════════════
+   CAMERA SCANNER
+══════════════════════════════════════════════════════ */
+#scanner-modal{
+  display:none;position:fixed;inset:0;z-index:300;
+  background:#000;flex-direction:column;align-items:center;justify-content:center;
+}
+#scanner-modal.open{display:flex;}
+
+/* live video fills screen */
+#cam-video{
+  position:absolute;inset:0;width:100%;height:100%;
+  object-fit:cover;
+}
+#cam-canvas{display:none;}/* offscreen decode canvas */
+
+/* dark vignette overlay */
+.cam-overlay{
+  position:absolute;inset:0;pointer-events:none;
+  background: radial-gradient(ellipse 55% 45% at 50% 48%, transparent 60%, rgba(0,0,0,.72) 100%);
+}
+
+/* aiming frame */
+.cam-frame{
+  position:absolute;
+  width:220px;height:220px;
+  top:50%;left:50%;transform:translate(-50%,-54%);
+  border-radius:16px;
+  box-shadow:0 0 0 9999px rgba(0,0,0,.5);
+}
+.cam-frame::before,.cam-frame::after,
+.cam-corner-br,.cam-corner-bl{
+  content:'';position:absolute;width:36px;height:36px;
+  border-color:var(--gold);border-style:solid;border-radius:4px;
+}
+.cam-frame::before{top:-2px;left:-2px;border-width:3px 0 0 3px;}
+.cam-frame::after {top:-2px;right:-2px;border-width:3px 3px 0 0;}
+.cam-corner-br{bottom:-2px;right:-2px;border-width:0 3px 3px 0;}
+.cam-corner-bl{bottom:-2px;left:-2px;border-width:0 0 3px 3px;}
+
+/* scanning laser line */
+@keyframes laser{0%{top:8px;opacity:1}50%{opacity:.6}100%{top:calc(100% - 8px);opacity:1}}
+.cam-laser{
+  position:absolute;left:8px;right:8px;height:2px;
+  background:linear-gradient(90deg,transparent,var(--gold),var(--teal),var(--gold),transparent);
+  border-radius:2px;box-shadow:0 0 8px var(--gold);
+  animation:laser 2s ease-in-out infinite;
+}
+
+/* success flash */
+@keyframes flash{0%{opacity:0}30%{opacity:.7}100%{opacity:0}}
+.cam-flash{
+  position:absolute;inset:0;background:rgba(4,138,129,.35);
+  pointer-events:none;opacity:0;border-radius:16px;
+}
+.cam-flash.go{animation:flash .5s ease forwards;}
+
+/* instruction text */
+.cam-hint{
+  position:absolute;bottom:26%;left:0;right:0;
+  text-align:center;color:rgba(255,255,255,.85);font-size:14px;font-weight:600;
+  text-shadow:0 1px 4px rgba(0,0,0,.8);letter-spacing:.3px;
+}
+.cam-hint small{display:block;font-size:11px;color:rgba(255,255,255,.5);margin-top:4px;font-weight:400;}
+
+/* close / torch buttons */
+.cam-btns{
+  position:absolute;bottom:40px;left:0;right:0;
+  display:flex;justify-content:center;gap:16px;
+}
+.cam-btn{
+  background:rgba(255,255,255,.15);backdrop-filter:blur(6px);
+  border:1.5px solid rgba(255,255,255,.3);color:#fff;
+  padding:12px 28px;border-radius:50px;font-size:14px;font-weight:700;
+  cursor:pointer;transition:all .2s;
+}
+.cam-btn:hover{background:rgba(255,255,255,.28);}
+.cam-btn.torch-on{background:var(--gold);color:var(--dark);border-color:var(--gold);}
+
+/* result pill that appears briefly on success */
+.cam-result-pill{
+  position:absolute;top:18%;left:50%;transform:translateX(-50%);
+  background:var(--teal);color:#fff;padding:10px 20px;border-radius:50px;
+  font-size:14px;font-weight:700;white-space:nowrap;
+  box-shadow:0 4px 20px rgba(0,0,0,.4);
+  opacity:0;transition:opacity .3s;pointer-events:none;
+}
+.cam-result-pill.show{opacity:1;}
+
+/* ══════════════════════════════════════════════════════
+   SCAN PAGE — input area
+══════════════════════════════════════════════════════ */
+.scan-hero{
+  background:linear-gradient(135deg,var(--dark) 0%,var(--mid) 100%);
+  border-radius:16px;padding:20px;margin-bottom:14px;
+  box-shadow:0 4px 20px rgba(0,0,0,.2);
+}
+.scan-hero h2{color:#fff;font-size:17px;margin-bottom:4px;}
+.scan-hero p{color:var(--gray);font-size:12px;margin-bottom:16px;}
+
+.scan-btn-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+.scan-cam-btn{
+  background:var(--teal);color:#fff;border:none;border-radius:12px;
+  padding:16px 10px;font-size:14px;font-weight:700;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;gap:6px;
+  transition:all .2s;box-shadow:0 3px 12px rgba(4,138,129,.4);
+}
+.scan-cam-btn:hover{filter:brightness(1.1);transform:translateY(-1px);}
+.scan-cam-btn .big-icon{font-size:32px;}
+.scan-manual-btn{
+  background:rgba(255,255,255,.1);color:#fff;border:1.5px solid rgba(255,255,255,.2);
+  border-radius:12px;padding:16px 10px;font-size:14px;font-weight:700;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;gap:6px;transition:all .2s;
+}
+.scan-manual-btn:hover{background:rgba(255,255,255,.18);}
+.scan-manual-btn .big-icon{font-size:32px;}
+
+.manual-input-wrap{position:relative;margin-top:2px;}
+.manual-input-wrap input{
+  width:100%;padding:13px 44px 13px 14px;font-size:15px;border-radius:10px;
+  border:2px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);
+  color:#fff;outline:none;font-weight:700;letter-spacing:1px;
+  transition:border .2s;
+}
+.manual-input-wrap input::placeholder{color:rgba(255,255,255,.4);font-weight:400;letter-spacing:0;}
+.manual-input-wrap input:focus{border-color:var(--gold);}
+.manual-input-wrap .go-btn{
+  position:absolute;right:10px;top:50%;transform:translateY(-50%);
+  background:var(--teal);border:none;color:#fff;width:30px;height:30px;
+  border-radius:8px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;
+}
+
+/* ── BIN RESULT PANEL ── */
+#bin-panel{display:none;}
+.bin-header{
+  background:var(--dark);border-radius:12px 12px 0 0;
+  display:flex;align-items:stretch;overflow:hidden;
+}
+.bin-header .cat{flex:1;padding:14px 16px;color:#fff;}
+.bin-header .cat h3{font-size:15px;font-weight:700;}
+.bin-header .cat p{font-size:11px;color:var(--gray);margin-top:2px;}
+.bin-header .rak-box{
+  background:var(--mid);padding:8px 14px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  border-left:2px solid var(--teal);min-width:76px;
+}
+.rak-label{font-size:11px;color:var(--gold);font-weight:700;}
+.rak-num  {font-size:26px;font-weight:800;color:#fff;line-height:1;}
+.rak-kotak{font-size:11px;color:var(--gold);}
+
+.action-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:12px 0;}
+.action-btn{
+  padding:12px 6px;border:none;border-radius:10px;
+  font-size:12px;font-weight:700;cursor:pointer;transition:all .15s;
+  display:flex;flex-direction:column;align-items:center;gap:4px;
+}
+.action-btn .icon{font-size:22px;}
+.btn-out   {background:#FEE2E2;color:var(--red);}
+.btn-in    {background:#D1FAE5;color:#065F46;}
+.btn-opname{background:#EEF2FF;color:#3730A3;}
+.action-btn:hover{filter:brightness(.93);transform:translateY(-1px);}
+
+.items-table{width:100%;border-collapse:collapse;font-size:13px;}
+.items-table th{background:var(--teal);color:#fff;padding:8px 10px;text-align:left;font-weight:700;}
+.items-table th:nth-child(3),.items-table th:nth-child(4){text-align:center;width:58px;}
+.items-table td{padding:8px 10px;border-bottom:1px solid #eee;}
+.items-table tr:nth-child(even) td{background:var(--light);}
+.items-table td:nth-child(3),.items-table td:nth-child(4){text-align:center;}
+.qty-badge{
+  display:inline-block;background:var(--teal);color:#fff;
+  padding:2px 10px;border-radius:12px;font-weight:700;min-width:34px;text-align:center;
+}
+.qty-badge.low {background:var(--red);}
+.qty-badge.zero{background:#999;}
+
+/* ── CARDS ── */
+.card{background:#fff;border-radius:12px;padding:16px;
+    box-shadow:0 2px 8px rgba(0,0,0,.07);margin-bottom:14px;}
+.card-title{font-size:15px;font-weight:700;color:var(--dark);
+    margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+
+/* ── MODAL ── */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);
+    z-index:200;align-items:flex-end;justify-content:center;padding:0;}
+.modal-overlay.open{display:flex;}
+.modal{background:#fff;border-radius:20px 20px 0 0;width:100%;max-width:500px;
+    overflow:hidden;box-shadow:0 -8px 40px rgba(0,0,0,.25);
+    max-height:90vh;overflow-y:auto;}
+.modal-head{padding:16px 20px;font-size:16px;font-weight:700;color:#fff;}
+.modal-head.out   {background:var(--red);}
+.modal-head.in    {background:var(--green);}
+.modal-head.opname{background:#3730A3;}
+.modal-body{padding:20px;}
+.modal-body label{font-size:12px;font-weight:700;color:var(--mid);
+    display:block;margin-bottom:4px;margin-top:14px;}
+.modal-body label:first-child{margin-top:0;}
+.modal-body select,.modal-body input[type=number],.modal-body textarea{
+  width:100%;padding:11px 12px;border:1.5px solid #ddd;border-radius:10px;
+  font-size:15px;outline:none;transition:border .2s;}
+.modal-body select:focus,.modal-body input[type=number]:focus,
+.modal-body textarea:focus{border-color:var(--teal);}
+.modal-body .cur-qty{
+  background:var(--light);border-radius:10px;padding:12px 14px;
+  font-size:24px;font-weight:800;color:var(--dark);text-align:center;}
+.modal-body .cur-qty span{font-size:12px;color:#888;font-weight:400;display:block;}
+.modal-footer{display:flex;gap:8px;padding:0 20px 28px;}
+.modal-footer button{flex:1;padding:14px;border:none;border-radius:10px;
+    font-size:15px;font-weight:700;cursor:pointer;transition:filter .15s;}
+.modal-footer button:hover{filter:brightness(.92);}
+.btn-cancel{background:#f0f0f0;color:#555;}
+.btn-confirm-out   {background:var(--red);color:#fff;}
+.btn-confirm-in    {background:var(--green);color:#fff;}
+.btn-confirm-opname{background:#3730A3;color:#fff;}
+
+/* ── HISTORY ── */
+.history-item{display:flex;align-items:center;gap:12px;
+    padding:10px 0;border-bottom:1px solid #eee;}
+.history-item:last-child{border-bottom:none;}
+.hist-icon{width:36px;height:36px;border-radius:50%;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;font-size:16px;}
+.hist-icon.out   {background:#FEE2E2;}
+.hist-icon.in    {background:#D1FAE5;}
+.hist-icon.opname{background:#EEF2FF;}
+.hist-info{flex:1;}
+.hist-info .hist-name{font-size:13px;font-weight:600;}
+.hist-info .hist-meta{font-size:11px;color:#888;margin-top:2px;}
+.hist-qty{font-size:14px;font-weight:700;}
+.hist-qty.out   {color:var(--red);}
+.hist-qty.in    {color:var(--green);}
+.hist-qty.opname{color:#3730A3;}
+
+/* ── DASHBOARD ── */
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;}
+.stat-card{background:#fff;border-radius:12px;padding:16px;
+    box-shadow:0 2px 8px rgba(0,0,0,.07);text-align:center;border-top:4px solid var(--teal);}
+.stat-card.red  {border-color:var(--red);}
+.stat-card.gold {border-color:var(--gold);}
+.stat-card.green{border-color:var(--green);}
+.stat-num  {font-size:32px;font-weight:800;color:var(--dark);line-height:1;}
+.stat-label{font-size:12px;color:#888;margin-top:4px;}
+
+/* ── BINS ── */
+.search-bar{width:100%;padding:10px 14px;border:1.5px solid #ddd;
+    border-radius:10px;font-size:14px;outline:none;margin-bottom:10px;}
+.search-bar:focus{border-color:var(--teal);}
+.pill-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;}
+.pill{padding:4px 12px;border-radius:20px;font-size:12px;
+    border:1.5px solid #ddd;background:#fff;cursor:pointer;transition:.15s;}
+.pill.active{background:var(--teal);color:#fff;border-color:var(--teal);}
+
+/* ── OPNAME ── */
+.opname-row{display:flex;align-items:center;gap:10px;
+    padding:8px 0;border-bottom:1px solid #eee;}
+.opname-row:last-child{border-bottom:none;}
+.opname-name{flex:1;font-size:13px;}
+.opname-sys {font-size:13px;color:#888;width:38px;text-align:center;}
+.opname-input{width:68px;padding:6px 8px;border:1.5px solid #ddd;
+    border-radius:6px;font-size:14px;text-align:center;}
+.opname-diff{width:46px;text-align:center;font-weight:700;font-size:13px;}
+.opname-diff.pos{color:var(--green);}
+.opname-diff.neg{color:var(--red);}
+
+/* ── UTILS ── */
+.empty{text-align:center;color:#aaa;padding:32px;font-size:13px;}
+#no-bin{display:none;}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+    background:var(--dark);color:#fff;padding:12px 24px;border-radius:50px;
+    font-size:14px;font-weight:600;box-shadow:0 4px 20px rgba(0,0,0,.3);
+    z-index:500;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;}
+.toast.show{opacity:1;}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">Rumah<span>Stock</span></div>
+  <div class="nav-tabs">
+    <button class="active" onclick="showPage('scan',this)">
+      <span class="nav-icon">📷</span>Scan
+    </button>
+    <button onclick="showPage('bins',this)">
+      <span class="nav-icon">📦</span>Bins
+    </button>
+    <button onclick="showPage('history',this)">
+      <span class="nav-icon">📋</span>History
+    </button>
+    <button onclick="showPage('dashboard',this)">
+      <span class="nav-icon">📊</span>Stats
+    </button>
+  </div>
+</nav>
+
+<!-- ══ CAMERA SCANNER FULLSCREEN ══ -->
+<div id="scanner-modal">
+  <video id="cam-video" autoplay playsinline muted></video>
+  <canvas id="cam-canvas"></canvas>
+  <div class="cam-overlay"></div>
+  <div class="cam-frame">
+    <div class="cam-corner-br"></div>
+    <div class="cam-corner-bl"></div>
+    <div class="cam-laser"></div>
+    <div class="cam-flash" id="cam-flash"></div>
+  </div>
+  <div class="cam-hint">
+    Point at the QR code on the bin label
+    <small>Hold steady — scanning automatically</small>
+  </div>
+  <div class="cam-result-pill" id="cam-result-pill"></div>
+  <div class="cam-btns">
+    <button class="cam-btn" id="torch-btn" onclick="toggleTorch()">🔦 Torch</button>
+    <button class="cam-btn" onclick="closeScanner()">✕ Close</button>
+  </div>
+</div>
+
+<!-- ══ SCAN PAGE ══ -->
+<div id="page-scan" class="page active">
+  <div class="scan-hero">
+    <h2>📦 Inventory Scanner</h2>
+    <p>Scan the QR code on any bin label to view and update its stock</p>
+    <div class="scan-btn-row">
+      <button class="scan-cam-btn" onclick="openScanner()">
+        <span class="big-icon">📷</span>
+        Scan QR Code
+      </button>
+      <button class="scan-manual-btn" onclick="focusManual()">
+        <span class="big-icon">⌨️</span>
+        Manual Entry
+      </button>
+    </div>
+    <div class="manual-input-wrap">
+      <input id="scan-input" type="text" placeholder="e.g. BIN-TOI-D3-05"
+             autocomplete="off" autocapitalize="characters"
+             oninput="if(this.value.length>=10)scanBin()"
+             onkeydown="if(event.key==='Enter')scanBin()"/>
+      <button class="go-btn" onclick="scanBin()">→</button>
+    </div>
+  </div>
+
+  <div id="bin-panel">
+    <div class="bin-header" id="bin-header"></div>
+    <div class="card" style="border-radius:0 0 12px 12px;margin-top:0;padding-top:12px;">
+      <div class="action-row">
+        <button class="action-btn btn-out"    onclick="openModal('out')">
+          <span class="icon">📤</span>AMBIL
+        </button>
+        <button class="action-btn btn-in"     onclick="openModal('in')">
+          <span class="icon">📥</span>SIMPAN
+        </button>
+        <button class="action-btn btn-opname" onclick="openModal('opname')">
+          <span class="icon">🔢</span>OPNAME
+        </button>
+      </div>
+      <table class="items-table">
+        <thead><tr><th>#</th><th>Nama Barang</th><th>Qty</th><th>Unit</th></tr></thead>
+        <tbody id="items-body"></tbody>
+      </table>
+    </div>
+  </div>
+  <div id="no-bin" class="card">
+    <div class="empty">❌ Bin ID not found — please try again.</div>
+  </div>
+</div>
+
+<!-- ══ BINS PAGE ══ -->
+<div id="page-bins" class="page">
+  <input class="search-bar" placeholder="🔍  Search bin or item name…" oninput="filterBins(this.value)"/>
+  <div class="pill-row" id="cat-pills"></div>
+  <div id="bins-list"></div>
+</div>
+
+<!-- ══ HISTORY PAGE ══ -->
+<div id="page-history" class="page">
+  <div class="card">
+    <div class="card-title">Transaction History</div>
+    <div id="history-list"><div class="empty">No transactions yet.</div></div>
+  </div>
+</div>
+
+<!-- ══ DASHBOARD PAGE ══ -->
+<div id="page-dashboard" class="page">
+  <div class="stats-grid" id="stats-grid"></div>
+  <div class="card">
+    <div class="card-title">Recent Activity</div>
+    <div id="dash-activity"></div>
+  </div>
+</div>
+
+<!-- ══ TRANSACTION MODAL ══ -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModalOutside(event)">
+  <div class="modal" id="modal">
+    <div class="modal-head"   id="modal-head"></div>
+    <div class="modal-body"   id="modal-body"></div>
+    <div class="modal-footer" id="modal-footer"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ══════════════════════════════════════════════════════
+   INITIAL DATA
+══════════════════════════════════════════════════════ */
+const BINS_INITIAL = [
+  {id:"BIN-TOI-D3-05",cat:"Perlengkapan Toilet",rak:"D3",kotak:"5",items:[
+    {name:"Muscle Gel Toilet",qty:6,unit:"Pack"},{name:"Kamper Bebek",qty:10,unit:"Pcs"},
+    {name:"Bebek Flush Set",qty:1,unit:"Pcs"},{name:"Bebek Flush Refill",qty:5,unit:"Pcs"},
+    {name:"Bebek Refill Kloset",qty:2,unit:"Pouch"},{name:"Bebek Refill KM Mandi",qty:5,unit:"Pouch"},
+    {name:"Bebek Refill Karbol",qty:15,unit:"Pouch"}]},
+  {id:"BIN-KEB-D3-06",cat:"Perlengkapan Kebersihan",rak:"D3",kotak:"6",items:[
+    {name:"Serap Refill",qty:8,unit:"Pack"},{name:"Kit Sofa",qty:9,unit:"Bte"},
+    {name:"Anti Bau Sepatu",qty:17,unit:"Pack"},{name:"Kapur Semut",qty:4,unit:"Kotak"},
+    {name:"Lap Kain",qty:4,unit:"Pack"}]},
+  {id:"BIN-KEB-D2-03",cat:"Perlengkapan Kebersihan",rak:"D2",kotak:"3",items:[
+    {name:"Lap Spons",qty:9,unit:"Pack"},{name:"Plastik Daur Ulang",qty:0,unit:"—"},
+    {name:"Silica Gel",qty:0,unit:"—"},{name:"Sarung Tangan Karet",qty:3,unit:"Pack"}]},
+  {id:"BIN-KEB-D3-07",cat:"Perlengkapan Kebersihan",rak:"D3",kotak:"7+8",items:[
+    {name:"Baygon Besar",qty:32,unit:"Bte"},{name:"Baygon Kecil",qty:11,unit:"Bte"},
+    {name:"HIT Besar",qty:4,unit:"Bte"},{name:"HIT Kecil",qty:1,unit:"Bte"}]},
+  {id:"BIN-KEB-D2-01",cat:"Perlengkapan Kebersihan",rak:"D2",kotak:"1",items:[
+    {name:"Plastik Kantong Beras",qty:4,unit:"Pack"}]},
+  {id:"BIN-KEB-D2-02",cat:"Perlengkapan Kebersihan",rak:"D2",kotak:"2",items:[
+    {name:"Kantong Sampah Besar",qty:17,unit:"Pack"},{name:"Kantong Sampah Kecil",qty:11,unit:"Pack"},
+    {name:"Kantong Sampah Bulat",qty:4,unit:"Kotak"}]},
+  {id:"BIN-MOB-E4-01",cat:"Perlengkapan Cuci Mobil",rak:"E4",kotak:"1",items:[
+    {name:"Wiper Spray",qty:2,unit:"Bte"},{name:"Kit Compound",qty:4,unit:"Kotak"},
+    {name:"Kanebo",qty:3,unit:"Kotak"},{name:"Wiper Fluid Refill",qty:5,unit:"Pouch"},
+    {name:"Shampo Kit Refill",qty:1,unit:"Pouch"},{name:"Shampo Kit Botol",qty:1,unit:"Bte"},
+    {name:"Black Magic Ban",qty:4,unit:"Pouch"},{name:"Pengkilap Refill",qty:9,unit:"Pouch"},
+    {name:"Spons Bulat Besar",qty:2,unit:"Pcs"},{name:"Spons Bulat Kecil",qty:1,unit:"Pcs"},
+    {name:"Spons Bulat Poles",qty:1,unit:"Pack"},{name:"Lap Poles",qty:2,unit:"Pcs"},
+    {name:"Bhampo Kit Mobil",qty:2,unit:"Drigen"}]},
+  {id:"BIN-LMP-D2-04",cat:"Perlengkapan Lampu-Lampu",rak:"D2",kotak:"4",items:[
+    {name:"Philips LED WW 12W",qty:2,unit:"Kotak"},{name:"Panasonic WW 8W",qty:4,unit:"Kotak"},
+    {name:"Philips LED Kuning 12W",qty:4,unit:"Kotak"},{name:"Philips PLS WW 8W",qty:3,unit:"Kotak"},
+    {name:"Philips LED WW 4W",qty:3,unit:"Kotak"},{name:"Philips LED WW 3W",qty:3,unit:"Kotak"},
+    {name:"IKEA Warm White 40W",qty:2,unit:"Pcs"},{name:"Lampu Pijar 8W",qty:2,unit:"Pcs"},
+    {name:"Lampu Pijar 5W",qty:2,unit:"Pcs"},{name:"Philips LED Amber 6W",qty:3,unit:"Kotak"}]},
+  {id:"BIN-PRI-F-LB",cat:"Perlengkapan Cuci Piring",rak:"F",kotak:"Lmr Bwh",items:[
+    {name:"Sunlight",qty:28,unit:"Pouch"},{name:"Spons Cuci",qty:9,unit:"Pcs"},
+    {name:"Spons Kawat",qty:3,unit:"Pcs"},{name:"Cif Cream",qty:11,unit:"Bte"},
+    {name:"Muscle Serbaguna",qty:12,unit:"Pouch"},{name:"Brodio",qty:4,unit:"Bte"},
+    {name:"Sunlight Botol",qty:4,unit:"Bte"}]},
+  {id:"BIN-KEB-F-LA",cat:"Perlengkapan Kebersihan",rak:"F",kotak:"Lmr Ats",items:[
+    {name:"Biore Guard",qty:17,unit:"Pouch"},{name:"Super Pel",qty:7,unit:"Pouch"},
+    {name:"Super Sol",qty:0,unit:"Pouch"},{name:"Pledge Oil",qty:3,unit:"Bte"},
+    {name:"Pledge Spray",qty:2,unit:"Bte"},{name:"Tissu Roll",qty:7,unit:"Pcs"},
+    {name:"Tissu Nice",qty:5,unit:"Pack"},{name:"Cif Limescale Spray",qty:2,unit:"Bte"},
+    {name:"Muscle Serbaguna Spray",qty:3,unit:"Bte"},{name:"Windex Spray",qty:1,unit:"Bte"},
+    {name:"Wipol",qty:1,unit:"Pouch"},{name:"WPC",qty:1,unit:"Bte"},
+    {name:"Kamper Dahlia",qty:15,unit:"Pack"},{name:"Pledge Refill (Kotak 1)",qty:11,unit:"Pouch"},
+    {name:"Kamper Bagus Baju",qty:26,unit:"Pack"},{name:"Rapika",qty:24,unit:"Pouch"},
+    {name:"Pemutih Raju",qty:1,unit:"Bte"},{name:"Roll Bulu (Kotak 2)",qty:0,unit:""}]},
+  {id:"BIN-DAP-C",cat:"Persediaan Stock Dapur",rak:"C",kotak:"—",items:[
+    {name:"Under Pads",qty:0,unit:"Rak Atas No1"},{name:"Indomie",qty:0,unit:"Rak No2"},
+    {name:"Gula + Kopi",qty:0,unit:"Rak No2"},{name:"Susu Etawa Ku",qty:0,unit:"Rak No3"},
+    {name:"Betadine Kumur",qty:0,unit:"Rak No3"},{name:"Perlengkapan",qty:0,unit:"Rak No4"}]},
+  {id:"BIN-BER-D5-13",cat:"Persediaan Stock Beras",rak:"D5",kotak:"13",items:[
+    {name:"Beras Liteam / Kambong",qty:0,unit:""},{name:"Beras BMW",qty:0,unit:""}]},
+  {id:"BIN-LDR-D3-09",cat:"Perlengkapan Laundry",rak:"D3",kotak:"9+10",items:[
+    {name:"Detergen Bubuk",qty:12,unit:"Pack"},{name:"Detergen Liquid",qty:23,unit:"Pouch"},
+    {name:"Detergen Liquid Batik",qty:3,unit:"Pouch"},{name:"Detergen Liquid Botol",qty:1,unit:"Bte"}]},
+  {id:"BIN-LDR-B1-07",cat:"Perlengkapan Laundry",rak:"B1",kotak:"7",items:[
+    {name:"Soklin Pewangi",qty:41,unit:"Pouch"},{name:"Bayclin",qty:6,unit:"Drigen"}]},
+  {id:"BIN-DIS-B3-02",cat:"Tissu & Disinfektan",rak:"B3",kotak:"2",items:[
+    {name:"Antibact Disinfectan",qty:0,unit:"Kotak 1"},{name:"Dettol Tissu Basah",qty:0,unit:"Kotak 2"},
+    {name:"Bayclin",qty:0,unit:"Kotak 3"}]},
+  {id:"BIN-MSK-B2-05",cat:"Perlengkapan Masker",rak:"B2",kotak:"5+6",items:[]},
+  {id:"BIN-PRS-D5-14",cat:"Perlengkapan Personal Care",rak:"D5",kotak:"14",items:[
+    {name:"Enzyme Besar",qty:13,unit:"Pcs"},{name:"Pepsodent Herbal",qty:8,unit:"Pack+Pcs"},
+    {name:"Sheba Med Body Wash",qty:1,unit:"Bte"},{name:"Colgate",qty:2,unit:"Bte"},
+    {name:"Emnslik Shampo",qty:3,unit:"Bte"},{name:"Lifeboy Shampo",qty:3,unit:"Pouch"},
+    {name:"Lifeboy Anti Acne",qty:1,unit:"Pouch"},{name:"Natural Body Wash",qty:1,unit:"Pouch"},
+    {name:"Strawberry Shampo",qty:1,unit:"Pouch"},{name:"Palmolive",qty:2,unit:"Bte"},
+    {name:"Dettol Cair Hijau",qty:3,unit:"Bte"},{name:"Dettol Cuci Tangan",qty:1,unit:"Bte"},
+    {name:"Dettol Refill",qty:18,unit:"Pouch"},{name:"Darlie Pasta Gigi",qty:1,unit:"Kotak"},
+    {name:"Cetaphil",qty:1,unit:"Bte"},{name:"Biore Refill",qty:9,unit:"Pouch"}]},
+  {id:"BIN-ABB-D3-11",cat:"Perlengkapan Abby",rak:"D3",kotak:"11",items:[
+    {name:"Bedak Biang Keringat",qty:8,unit:"Bte"},{name:"Cetaphil Baby",qty:2,unit:"Bte"},
+    {name:"Baby Bedtime",qty:3,unit:"Bte"},{name:"Pigeon Baby Cologne",qty:5,unit:"Bte"},
+    {name:"Pigeon Hair Lotion",qty:1,unit:"Bte"},{name:"Pigeon Hair + Body Wash",qty:1,unit:"Bte"},
+    {name:"Pigeon Baby Wash Kecil",qty:1,unit:"Bte"},{name:"Baby Bath",qty:1,unit:"Bte"},
+    {name:"Suntrsel",qty:1,unit:"Bte"},{name:"Pigeon Baby Wash 2in1",qty:9,unit:"Pouch"},
+    {name:"Suntrsel Baby Shampo",qty:2,unit:"Pouch"},{name:"Shower Cap",qty:2,unit:"Pcs"},
+    {name:"Kasa Steril Dres",qty:7,unit:"Kotak"}]},
+];
+
+/* ══════════════════════════════════════════════════════
+   STATE
+══════════════════════════════════════════════════════ */
+function loadState(){
+  try{const s=localStorage.getItem('rumahstock_v2');if(s)return JSON.parse(s);}catch(e){}
+  return{bins:JSON.parse(JSON.stringify(BINS_INITIAL)),history:[]};
+}
+function saveState(){try{localStorage.setItem('rumahstock_v2',JSON.stringify(state));}catch(e){}}
+let state=loadState();
+let currentBin=null;
+
+/* ══════════════════════════════════════════════════════
+   CAMERA SCANNER
+══════════════════════════════════════════════════════ */
+let camStream=null, scanLoop=null, torchOn=false, scanLocked=false;
+
+async function openScanner(){
+  const modal=document.getElementById('scanner-modal');
+  modal.classList.add('open');
+  scanLocked=false;
+  try{
+    const constraints={
+      video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}}
+    };
+    camStream=await navigator.mediaDevices.getUserMedia(constraints);
+    const video=document.getElementById('cam-video');
+    video.srcObject=camStream;
+    await video.play();
+    startDecodeLoop();
+  }catch(err){
+    closeScanner();
+    showToast('⚠️ Camera access denied — use Manual Entry');
+  }
+}
+
+function closeScanner(){
+  document.getElementById('scanner-modal').classList.remove('open');
+  if(scanLoop){cancelAnimationFrame(scanLoop);scanLoop=null;}
+  if(camStream){camStream.getTracks().forEach(t=>t.stop());camStream=null;}
+  torchOn=false;
+  document.getElementById('torch-btn').classList.remove('torch-on');
+  document.getElementById('cam-result-pill').classList.remove('show');
+}
+
+function startDecodeLoop(){
+  const video=document.getElementById('cam-video');
+  const canvas=document.getElementById('cam-canvas');
+  const ctx=canvas.getContext('2d',{willReadFrequently:true});
+
+  function tick(){
+    if(!camStream){return;}
+    if(video.readyState===video.HAVE_ENOUGH_DATA){
+      canvas.width=video.videoWidth;
+      canvas.height=video.videoHeight;
+      ctx.drawImage(video,0,0,canvas.width,canvas.height);
+
+      // Try BarcodeDetector first (native, fast)
+      if(window.BarcodeDetector && !scanLocked){
+        const bd=new BarcodeDetector({formats:['qr_code']});
+        bd.detect(canvas).then(codes=>{
+          if(codes.length>0) handleScanResult(codes[0].rawValue);
+        }).catch(()=>{});
+      }
+
+      // jsQR fallback
+      if(window.jsQR && !scanLocked){
+        const imageData=ctx.getImageData(0,0,canvas.width,canvas.height);
+        const code=jsQR(imageData.data,imageData.width,imageData.height,{inversionAttempts:'dontInvert'});
+        if(code) handleScanResult(code.data);
+      }
+    }
+    scanLoop=requestAnimationFrame(tick);
+  }
+  scanLoop=requestAnimationFrame(tick);
+}
+
+function handleScanResult(raw){
+  if(scanLocked) return;
+  // Strip any URL prefix — handles homestock://, rumahstock://, plain ID, or full URL
+  const id=raw.replace(/^.*?(?:homestock|rumahstock):\/\/bin\//i,'').trim().toUpperCase();
+  const bin=state.bins.find(b=>b.id===id);
+  if(!bin){
+    // Show feedback so user knows scan worked but bin wasn't recognised
+    scanLocked=true;
+    const pill=document.getElementById('cam-result-pill');
+    pill.textContent='⚠️ Bin tidak dikenal: '+id;
+    pill.classList.add('show');
+    setTimeout(()=>{pill.classList.remove('show');scanLocked=false;},2000);
+    return;
+  }
+
+  scanLocked=true; // prevent double-fire
+
+  // Flash + pill
+  const flash=document.getElementById('cam-flash');
+  flash.classList.remove('go');void flash.offsetWidth;flash.classList.add('go');
+  const pill=document.getElementById('cam-result-pill');
+  pill.textContent='✅ '+bin.cat+' · Rak '+bin.rak;
+  pill.classList.add('show');
+
+  // Haptic feedback
+  if(navigator.vibrate) navigator.vibrate([60,30,60]);
+
+  setTimeout(()=>{
+    closeScanner();
+    document.getElementById('scan-input').value=id;
+    loadBin(bin);
+  },700);
+}
+
+async function toggleTorch(){
+  if(!camStream) return;
+  const track=camStream.getVideoTracks()[0];
+  try{
+    torchOn=!torchOn;
+    await track.applyConstraints({advanced:[{torch:torchOn}]});
+    document.getElementById('torch-btn').classList.toggle('torch-on',torchOn);
+  }catch(e){showToast('Torch not supported on this device');}
+}
+
+/* ══════════════════════════════════════════════════════
+   SCAN / BIN DISPLAY
+══════════════════════════════════════════════════════ */
+function focusManual(){document.getElementById('scan-input').focus();}
+
+function scanBin(){
+  const raw=document.getElementById('scan-input').value.trim().toUpperCase();
+  const id=raw.replace(/^.*?(?:HOMESTOCK|RUMAHSTOCK):\/\/BIN\//,'');
+  const bin=state.bins.find(b=>b.id===id);
+  document.getElementById('no-bin').style.display=bin?'none':'block';
+  if(bin) loadBin(bin);
+  else document.getElementById('bin-panel').style.display='none';
+}
+
+function loadBin(bin){
+  currentBin=bin;
+  document.getElementById('bin-panel').style.display='block';
+  document.getElementById('no-bin').style.display='none';
+  renderBinHeader(bin);
+  renderItemsTable(bin);
+  // Smooth scroll to result
+  setTimeout(()=>document.getElementById('bin-panel').scrollIntoView({behavior:'smooth',block:'start'}),100);
+}
+
+function renderBinHeader(bin){
+  document.getElementById('bin-header').innerHTML=`
+    <div class="cat"><h3>${bin.cat}</h3><p>${bin.id}</p></div>
+    <div class="rak-box">
+      <div class="rak-label">RAK</div>
+      <div class="rak-num">${bin.rak}</div>
+      <div class="rak-kotak">Kotak ${bin.kotak}</div>
+    </div>`;
+}
+
+function renderItemsTable(bin){
+  const tbody=document.getElementById('items-body');
+  if(!bin.items.length){tbody.innerHTML='<tr><td colspan="4" class="empty">No items.</td></tr>';return;}
+  tbody.innerHTML=bin.items.map((it,i)=>{
+    const cls=it.qty===0?'zero':it.qty<=2?'low':'';
+    return`<tr><td>${i+1}</td><td>${it.name}</td>
+      <td><span class="qty-badge ${cls}">${it.qty}</span></td>
+      <td>${it.unit}</td></tr>`;
+  }).join('');
+}
+
+/* ══════════════════════════════════════════════════════
+   NAVIGATION
+══════════════════════════════════════════════════════ */
+function showPage(id,btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-tabs button').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  if(btn) btn.classList.add('active');
+  if(id==='bins')      renderBins();
+  if(id==='history')   renderHistory();
+  if(id==='dashboard') renderDashboard();
+}
+
+/* ══════════════════════════════════════════════════════
+   MODALS
+══════════════════════════════════════════════════════ */
+function openModal(type){
+  if(!currentBin) return;
+  const bin=currentBin;
+  const labels={out:'📤 AMBIL BARANG',in:'📥 SIMPAN BARANG',opname:'🔢 STOCK OPNAME'};
+  document.getElementById('modal-head').className='modal-head '+type;
+  document.getElementById('modal-head').textContent=labels[type];
+
+  if(type==='out'||type==='in'){
+    const opts=bin.items.map((it,i)=>`<option value="${i}">${it.name} — ${it.qty} ${it.unit}</option>`).join('');
+    document.getElementById('modal-body').innerHTML=`
+      <label>Pilih Barang</label>
+      <select id="m-item" onchange="updateCurQty()">${opts}</select>
+      <label>Qty Sekarang</label>
+      <div class="cur-qty" id="m-curqty">${bin.items[0]?.qty||0}<span>${bin.items[0]?.unit||''}</span></div>
+      <label>Jumlah ${type==='out'?'Diambil':'Disimpan'}</label>
+      <input type="number" id="m-qty" min="1" value="1" inputmode="numeric"/>
+      <label>Catatan (opsional)</label>
+      <textarea id="m-note" rows="2" placeholder="Contoh: dipakai kamar mandi utama…"></textarea>`;
+    document.getElementById('modal-footer').innerHTML=`
+      <button class="btn-cancel" onclick="closeModal()">Batal</button>
+      <button class="btn-confirm-${type}" onclick="confirmTx('${type}')">${type==='out'?'✅ Ambil':'✅ Simpan'}</button>`;
+  } else {
+    const rows=bin.items.map((it,i)=>`
+      <div class="opname-row">
+        <div class="opname-name">${it.name}</div>
+        <div class="opname-sys">${it.qty}</div>
+        <input class="opname-input" type="number" inputmode="numeric" id="op-${i}" min="0" value="${it.qty}"
+               oninput="updateDiff(${i},${it.qty})"/>
+        <div class="opname-diff" id="opd-${i}">—</div>
+      </div>`).join('');
+    document.getElementById('modal-body').innerHTML=`
+      <div style="display:flex;gap:8px;font-size:11px;font-weight:700;color:#888;margin-bottom:6px;padding:0 4px;">
+        <div style="flex:1">NAMA BARANG</div>
+        <div style="width:38px;text-align:center">SYS</div>
+        <div style="width:68px;text-align:center">AKTUAL</div>
+        <div style="width:46px;text-align:center">DIFF</div>
+      </div>${rows}`;
+    document.getElementById('modal-footer').innerHTML=`
+      <button class="btn-cancel" onclick="closeModal()">Batal</button>
+      <button class="btn-confirm-opname" onclick="confirmOpname()">✅ Simpan Opname</button>`;
+  }
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function updateCurQty(){
+  const i=parseInt(document.getElementById('m-item').value);
+  const it=currentBin.items[i];
+  document.getElementById('m-curqty').innerHTML=`${it.qty}<span>${it.unit}</span>`;
+}
+
+function updateDiff(i,sys){
+  const actual=parseInt(document.getElementById(`op-${i}`).value)||0;
+  const diff=actual-sys;
+  const el=document.getElementById(`opd-${i}`);
+  el.textContent=diff===0?'—':(diff>0?'+'+diff:diff);
+  el.className='opname-diff '+(diff>0?'pos':diff<0?'neg':'');
+}
+
+function confirmTx(type){
+  const i=parseInt(document.getElementById('m-item').value);
+  const qty=parseInt(document.getElementById('m-qty').value)||0;
+  const note=document.getElementById('m-note').value.trim();
+  if(qty<=0){showToast('⚠️ Masukkan jumlah yang valid');return;}
+  const it=currentBin.items[i];
+  if(type==='out'&&qty>it.qty){showToast(`⚠️ Stok hanya ${it.qty} ${it.unit}`);return;}
+  const before=it.qty;
+  it.qty=type==='out'?it.qty-qty:it.qty+qty;
+  addHistory(type,currentBin,it.name,qty,it.unit,before,it.qty,note);
+  saveState(); renderItemsTable(currentBin); closeModal();
+  showToast(type==='out'?`📤 ${qty} ${it.unit} diambil`:`📥 ${qty} ${it.unit} disimpan`);
+}
+
+function confirmOpname(){
+  const changes=[];
+  currentBin.items.forEach((it,i)=>{
+    const actual=parseInt(document.getElementById(`op-${i}`).value);
+    if(!isNaN(actual)&&actual!==it.qty){changes.push({name:it.name,unit:it.unit,before:it.qty,after:actual});it.qty=actual;}
+  });
+  if(!changes.length){showToast('Tidak ada perubahan');closeModal();return;}
+  changes.forEach(c=>addHistory('opname',currentBin,c.name,Math.abs(c.after-c.before),c.unit,c.before,c.after,'Stock Opname'));
+  saveState(); renderItemsTable(currentBin); closeModal();
+  showToast(`✅ Opname selesai — ${changes.length} item diperbarui`);
+}
+
+function addHistory(type,bin,name,qty,unit,before,after,note){
+  state.history.unshift({type,binId:bin.id,binCat:bin.cat,rak:bin.rak,kotak:bin.kotak,
+    name,qty,unit,before,after,note,ts:new Date().toISOString()});
+  if(state.history.length>300) state.history.pop();
+}
+
+function closeModal(){document.getElementById('modal-overlay').classList.remove('open');}
+function closeModalOutside(e){if(e.target===document.getElementById('modal-overlay'))closeModal();}
+
+/* ══════════════════════════════════════════════════════
+   BINS PAGE
+══════════════════════════════════════════════════════ */
+let activeFilter='all';
+function renderBins(filter='',catFilter=activeFilter){
+  const cats=[...new Set(state.bins.map(b=>b.cat))];
+  document.getElementById('cat-pills').innerHTML=
+    `<span class="pill ${catFilter==='all'?'active':''}" onclick="setCat('all')">All</span>`+
+    cats.map(c=>`<span class="pill ${catFilter===c?'active':''}" onclick="setCat('${c.replace(/'/g,"\\'")}')">
+      ${c.replace('Perlengkapan ','')}</span>`).join('');
+  const fl=filter.toLowerCase();
+  const list=state.bins.filter(b=>{
+    const catOk=catFilter==='all'||b.cat===catFilter;
+    const srchOk=!fl||b.id.toLowerCase().includes(fl)||b.cat.toLowerCase().includes(fl)
+                     ||b.items.some(it=>it.name.toLowerCase().includes(fl));
+    return catOk&&srchOk;
+  });
+  document.getElementById('bins-list').innerHTML=list.map(bin=>`
+    <div class="card" style="padding:0;overflow:hidden;cursor:pointer" onclick="goScanBin('${bin.id}')">
+      <div class="bin-header">
+        <div class="cat"><h3>${bin.cat}</h3><p>${bin.id}</p></div>
+        <div class="rak-box">
+          <div class="rak-label">RAK</div>
+          <div class="rak-num">${bin.rak}</div>
+          <div class="rak-kotak">Kotak ${bin.kotak}</div>
+        </div>
+      </div>
+      <div style="padding:8px 14px;font-size:12px;color:#666;display:flex;gap:12px;">
+        <span>📦 ${bin.items.length} items</span>
+        ${bin.items.filter(i=>i.qty===0).length?`<span style="color:var(--red)">⚠️ ${bin.items.filter(i=>i.qty===0).length} empty</span>`:''}
+        ${bin.items.filter(i=>i.qty>0&&i.qty<=2).length?`<span style="color:orange">🟡 ${bin.items.filter(i=>i.qty>0&&i.qty<=2).length} low</span>`:''}
+      </div>
+    </div>`).join('')||'<div class="empty">No bins found.</div>';
+}
+function setCat(c){activeFilter=c;renderBins(document.querySelector('.search-bar')?.value||'');}
+function filterBins(v){renderBins(v,activeFilter);}
+function goScanBin(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-tabs button').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-scan').classList.add('active');
+  document.querySelector('.nav-tabs button').classList.add('active');
+  document.getElementById('scan-input').value=id;
+  scanBin();
+}
+
+/* ══════════════════════════════════════════════════════
+   HISTORY
+══════════════════════════════════════════════════════ */
+function renderHistory(){
+  const icons={out:'📤',in:'📥',opname:'🔢'};
+  const labels={out:'Ambil',in:'Simpan',opname:'Opname'};
+  const el=document.getElementById('history-list');
+  if(!state.history.length){el.innerHTML='<div class="empty">No transactions yet.</div>';return;}
+  el.innerHTML=state.history.map(h=>{
+    const d=new Date(h.ts);
+    const ts=d.toLocaleDateString('id-ID',{day:'2-digit',month:'short'})+' '+
+             d.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
+    const qstr=h.type==='opname'?`${h.before}→${h.after}`:`${h.type==='out'?'-':'+'}${h.qty} ${h.unit}`;
+    return`<div class="history-item">
+      <div class="hist-icon ${h.type}">${icons[h.type]}</div>
+      <div class="hist-info">
+        <div class="hist-name">${h.name}</div>
+        <div class="hist-meta">${labels[h.type]} · ${h.binCat} (Rak ${h.rak}) · ${ts}</div>
+        ${h.note?`<div class="hist-meta" style="font-style:italic;color:#bbb">${h.note}</div>`:''}
+      </div>
+      <div class="hist-qty ${h.type}">${qstr}</div>
+    </div>`;
+  }).join('');
+}
+
+/* ══════════════════════════════════════════════════════
+   DASHBOARD
+══════════════════════════════════════════════════════ */
+function renderDashboard(){
+  const all=state.bins.flatMap(b=>b.items);
+  const today=new Date();
+  const txToday=state.history.filter(h=>{const d=new Date(h.ts);
+    return d.getDate()===today.getDate()&&d.getMonth()===today.getMonth()&&d.getFullYear()===today.getFullYear();}).length;
+  document.getElementById('stats-grid').innerHTML=`
+    <div class="stat-card green"><div class="stat-num">${state.bins.length}</div><div class="stat-label">Total Bins</div></div>
+    <div class="stat-card">     <div class="stat-num">${all.length}</div><div class="stat-label">Total Items</div></div>
+    <div class="stat-card red"> <div class="stat-num">${all.filter(i=>i.qty===0).length}</div><div class="stat-label">Out of Stock</div></div>
+    <div class="stat-card gold"><div class="stat-num">${txToday}</div><div class="stat-label">Transaksi Hari Ini</div></div>`;
+  const icons={out:'📤',in:'📥',opname:'🔢'};
+  const recent=state.history.slice(0,8);
+  document.getElementById('dash-activity').innerHTML=recent.length
+    ?recent.map(h=>{
+        const d=new Date(h.ts);
+        const ts=d.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
+        return`<div class="history-item">
+          <div class="hist-icon ${h.type}">${icons[h.type]}</div>
+          <div class="hist-info">
+            <div class="hist-name">${h.name}</div>
+            <div class="hist-meta">${h.binCat} · Rak ${h.rak} · ${ts}</div>
+          </div>
+          <div class="hist-qty ${h.type}">${h.type==='out'?'-':h.type==='in'?'+':''}${h.qty} ${h.unit}</div>
+        </div>`;}).join('')
+    :'<div class="empty">No activity yet.</div>';
+}
+
+/* ══════════════════════════════════════════════════════
+   TOAST
+══════════════════════════════════════════════════════ */
+let toastTimer;
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove('show'),2500);
+}
+</script>
+</body>
+</html>

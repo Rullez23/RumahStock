@@ -2311,7 +2311,9 @@ function renderInvByItem(fromD, toD, catFilter, periodLabel){
   const hist = ensureArray(state.history).filter(h=>{
     const d=new Date(h.ts); return d>=fromD && d<=toD;
   });
-  bins.forEach(bin=>{
+
+  // Build item matrix
+  const matrix = {};
     ensureArray(bin.items).forEach(it=>{
       const key = it.name.toLowerCase().trim();
       if(!matrix[key]) matrix[key]={

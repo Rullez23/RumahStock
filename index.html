@@ -275,25 +275,99 @@ nav{background:var(--dark);color:#fff;display:flex;align-items:center;
     <div class="logo">Rumah<span>Stock</span></div>
     <p>Home Inventory Management</p>
   </div>
-  <div class="login-card">
-    <h2>🔐 Masuk ke RumahStock</h2>
+
+  <!-- STEP 1: House Selection -->
+  <div id="house-select-card" class="login-card">
+    <h2>🏠 Pilih Mode</h2>
+    <p style="font-size:13px;color:#888;text-align:center;margin-bottom:20px;">
+      Buat sistem inventori baru atau lanjutkan yang sudah ada
+    </p>
+    <button onclick="showHouseMode('new')"
+      style="width:100%;padding:16px;background:var(--teal);color:#fff;border:none;
+             border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;
+             margin-bottom:10px;display:flex;align-items:center;justify-content:center;gap:10px;">
+      🏡 <span>Rumah Baru<br><small style="font-weight:400;font-size:12px;">Buat sistem inventori dari awal</small></span>
+    </button>
+    <button onclick="showHouseMode('existing')"
+      style="width:100%;padding:16px;background:var(--mid);color:#fff;border:none;
+             border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;
+             display:flex;align-items:center;justify-content:center;gap:10px;">
+      🔑 <span>Rumah Existing<br><small style="font-weight:400;font-size:12px;">Masukkan kode rumah yang sudah dibuat</small></span>
+    </button>
+  </div>
+
+  <!-- STEP 2a: New House Setup -->
+  <div id="new-house-card" class="login-card" style="display:none;">
+    <button onclick="showStep('house-select')" style="background:none;border:none;color:var(--teal);font-size:13px;cursor:pointer;margin-bottom:12px;">← Kembali</button>
+    <h2>🏡 Buat Rumah Baru</h2>
+    <div class="login-field">
+      <label>Nama Rumah</label>
+      <input type="text" id="new-house-name" placeholder="Contoh: Rumah Keluarga Rully"
+             autocomplete="off"/>
+    </div>
+    <div class="login-field">
+      <label>Admin Username</label>
+      <input type="text" id="new-admin-user" placeholder="Contoh: admin"
+             autocomplete="off" autocapitalize="none"/>
+    </div>
+    <div class="login-field">
+      <label>Admin Password</label>
+      <input type="password" id="new-admin-pass" placeholder="Min. 6 karakter"/>
+    </div>
+    <div class="login-field">
+      <label>Operator Password <span style="font-weight:400;color:#aaa;">(untuk asisten rumah)</span></label>
+      <input type="password" id="new-op-pass" placeholder="Min. 6 karakter"/>
+    </div>
+    <button class="login-btn" onclick="createNewHouse()">Buat Rumah →</button>
+    <div class="login-error" id="new-house-error"></div>
+  </div>
+
+  <!-- STEP 2b: Existing House Login -->
+  <div id="existing-house-card" class="login-card" style="display:none;">
+    <button onclick="showStep('house-select')" style="background:none;border:none;color:var(--teal);font-size:13px;cursor:pointer;margin-bottom:12px;">← Kembali</button>
+    <h2>🔑 Masuk ke Rumah Existing</h2>
+    <div class="login-field">
+      <label>Kode Rumah</label>
+      <input type="text" id="existing-house-id" placeholder="Contoh: RUMAH-AB12CD"
+             autocomplete="off" autocapitalize="characters"
+             oninput="this.value=this.value.toUpperCase()"/>
+      <div style="font-size:11px;color:#aaa;margin-top:4px;">Kode rumah diberikan saat rumah pertama kali dibuat</div>
+    </div>
     <div class="login-field">
       <label>Username</label>
-      <input type="text" id="login-user" placeholder="admin / operator"
+      <input type="text" id="existing-user" placeholder="admin / operator"
              autocomplete="username" autocapitalize="none"/>
     </div>
     <div class="login-field">
       <label>Password</label>
-      <input type="password" id="login-pass" placeholder="••••••••"
+      <input type="password" id="existing-pass" placeholder="••••••••"
              autocomplete="current-password"
-             onkeydown="if(event.key==='Enter')doLogin()"/>
+             onkeydown="if(event.key==='Enter')loginExistingHouse()"/>
     </div>
-    <button class="login-btn" onclick="doLogin()">Masuk →</button>
-    <div class="login-error" id="login-error"></div>
+    <button class="login-btn" onclick="loginExistingHouse()">Masuk →</button>
+    <div class="login-error" id="existing-error"></div>
     <div class="login-info">
       Tier 1 — Admin: akses penuh<br>
       Tier 2 — Operator: hanya Ambil &amp; Simpan
     </div>
+  </div>
+
+  <!-- STEP 3: New House Created — show House ID -->
+  <div id="house-created-card" class="login-card" style="display:none;">
+    <h2 style="color:var(--teal);">✅ Rumah Berhasil Dibuat!</h2>
+    <p style="font-size:13px;color:#666;margin-bottom:16px;text-align:center;">
+      Simpan Kode Rumah ini — diperlukan untuk masuk dari perangkat lain
+    </p>
+    <div style="background:var(--dark);border-radius:12px;padding:16px;text-align:center;margin-bottom:16px;">
+      <div style="font-size:11px;color:var(--gold);font-weight:700;letter-spacing:1px;margin-bottom:8px;">KODE RUMAH</div>
+      <div id="display-house-id" style="font-size:24px;font-weight:900;color:#fff;letter-spacing:3px;"></div>
+      <div style="font-size:11px;color:#888;margin-top:8px;">Bagikan kode ini ke anggota keluarga</div>
+    </div>
+    <div style="background:#FFF7E6;border-radius:10px;padding:12px;border:1px solid #FDE68A;
+                font-size:12px;color:#92400E;margin-bottom:16px;">
+      ⚠️ <strong>Screenshot atau catat kode ini sekarang.</strong> Kode tidak bisa dipulihkan jika hilang.
+    </div>
+    <button class="login-btn" onclick="enterAppAfterCreate()">Masuk ke Aplikasi →</button>
   </div>
 </div>
 
@@ -645,12 +719,199 @@ const FIREBASE_CONFIG = {
 };
 
 /* ═══════════════════════════════════════════════════
-   USER ACCOUNTS  (change passwords here)
+   HOUSE & AUTH STATE
 ═══════════════════════════════════════════════════ */
-const USERS = {
-  admin:    { password: 'admin123',    role: 'admin' },
-  operator: { password: 'operator123', role: 'operator' }
-};
+// currentHouse: { id, name, adminUser, adminPass, opPass }
+// currentUser:  { username, role }
+let currentHouse = null;
+
+function genHouseId(){
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let id = 'RUMAH-';
+  for(let i=0;i<6;i++) id += chars[Math.floor(Math.random()*chars.length)];
+  return id;
+}
+
+// Navigation between login steps
+function showStep(step){
+  ['house-select-card','new-house-card','existing-house-card','house-created-card']
+    .forEach(id=>{ const el=document.getElementById(id); if(el) el.style.display='none'; });
+  const target = {
+    'house-select': 'house-select-card',
+    'new':          'new-house-card',
+    'existing':     'existing-house-card',
+    'created':      'house-created-card',
+  }[step];
+  if(target){ const el=document.getElementById(target); if(el) el.style.display='block'; }
+}
+function showHouseMode(mode){ showStep(mode); }
+
+// Create new house
+async function createNewHouse(){
+  const name     = document.getElementById('new-house-name').value.trim();
+  const adminUser= document.getElementById('new-admin-user').value.trim().toLowerCase();
+  const adminPass= document.getElementById('new-admin-pass').value;
+  const opPass   = document.getElementById('new-op-pass').value;
+  const errEl    = document.getElementById('new-house-error');
+
+  if(!name)           { errEl.textContent='❌ Nama rumah wajib diisi'; return; }
+  if(!adminUser)      { errEl.textContent='❌ Username admin wajib diisi'; return; }
+  if(adminPass.length < 6) { errEl.textContent='❌ Password admin min. 6 karakter'; return; }
+  if(opPass.length < 6)    { errEl.textContent='❌ Password operator min. 6 karakter'; return; }
+  errEl.textContent = '';
+
+  const houseId = genHouseId();
+  currentHouse  = { id: houseId, name, adminUser, adminPass, opPass };
+  currentUser   = { username: adminUser, role: 'admin' };
+
+  // Save to Firebase
+  try {
+    await saveHouseConfig(houseId, { name, adminUser, adminPass, opPass });
+  } catch(e) {
+    // Offline — save locally
+    saveHouseLocally(currentHouse);
+  }
+
+  saveSession();
+  document.getElementById('display-house-id').textContent = houseId;
+  showStep('created');
+}
+
+function enterAppAfterCreate(){
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  // Start with empty bins for new house
+  state = { bins: [], history: [] };
+  applyRoleUI();
+  initFirebase();
+}
+
+function doLogout(){
+  currentUser  = null;
+  currentHouse = null;
+  try{ localStorage.removeItem('rs_session_v2'); }catch(e){}
+  try{ if(db) db.goOffline(); }catch(e){}
+  db=null; dbRef=null;
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+  showStep('house-select');
+  ['new-house-name','new-admin-user','new-admin-pass','new-op-pass',
+   'existing-house-id','existing-user','existing-pass'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value='';
+  });
+  ['new-house-error','existing-error'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.textContent='';
+  });
+}
+
+function applyRoleUI(){
+  const admin = isAdmin();
+  document.querySelectorAll('.admin-only').forEach(el=>{
+    el.style.display = admin ? '' : 'none';
+  });
+  ['nav-bins','nav-history','nav-dashboard'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.style.display='';
+  });
+  const ac = document.getElementById('items-action-col');
+  if(ac) ac.style.display = admin ? '' : 'none';
+  const logoEl = document.querySelector('.logo');
+  if(logoEl && currentUser){
+    const houseName = currentHouse?.name
+      ? `<span style="font-size:10px;color:rgba(255,255,255,.4);font-weight:400;display:block;">${currentHouse.name}</span>` : '';
+    logoEl.innerHTML = `Rumah<span>Stock</span> <span class="role-badge ${currentUser.role}">${currentUser.role}</span>${houseName}`;
+  }
+}
+
+// Login to existing house
+async function loginExistingHouse(){
+  const houseId = document.getElementById('existing-house-id').value.trim().toUpperCase();
+  const user    = document.getElementById('existing-user').value.trim().toLowerCase();
+  const pass    = document.getElementById('existing-pass').value;
+  const errEl   = document.getElementById('existing-error');
+
+  if(!houseId){ errEl.textContent='❌ Kode rumah wajib diisi'; return; }
+  if(!user)   { errEl.textContent='❌ Username wajib diisi'; return; }
+  if(!pass)   { errEl.textContent='❌ Password wajib diisi'; return; }
+  errEl.textContent = '⏳ Mencari data rumah…';
+
+  // Try to load house config from Firebase
+  let house = null;
+  try {
+    house = await loadHouseConfig(houseId);
+  } catch(e) {
+    house = loadHouseLocally(houseId);
+  }
+
+  // Fallback: accept hardcoded credentials for existing Rullez23 house
+  if(!house && houseId === 'RUMAH-DEFAULT'){
+    house = { id:'RUMAH-DEFAULT', name:'Rumah Rullez23',
+              adminUser:'admin', adminPass:'admin123', opPass:'operator123' };
+  }
+
+  if(!house){ errEl.textContent='❌ Kode rumah tidak ditemukan'; return; }
+
+  // Validate credentials
+  let role = null;
+  if(user === house.adminUser && pass === house.adminPass) role = 'admin';
+  else if((user === 'operator' || user === house.adminUser+'_op') && pass === house.opPass) role = 'operator';
+  // Also accept generic 'operator' username
+  else if(user === 'operator' && pass === house.opPass) role = 'operator';
+
+  if(!role){ errEl.textContent='❌ Username atau password salah'; return; }
+
+  currentHouse = house;
+  currentUser  = { username: user, role };
+  saveSession();
+
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  applyRoleUI();
+  initFirebase();
+}
+
+// Firebase house config helpers
+async function saveHouseConfig(houseId, config){
+  if(!db) return;
+  await firebase.database().ref(`rumahstock_houses/${houseId}/config`).set(config);
+}
+
+async function loadHouseConfig(houseId){
+  if(!db && !firebase.apps?.length) throw new Error('no firebase');
+  const snap = await firebase.database().ref(`rumahstock_houses/${houseId}/config`).once('value');
+  if(!snap.val()) return null;
+  return { id: houseId, ...snap.val() };
+}
+
+function saveHouseLocally(house){
+  try{ localStorage.setItem(`rs_house_${house.id}`, JSON.stringify(house)); }catch(e){}
+}
+function loadHouseLocally(houseId){
+  try{ const s=localStorage.getItem(`rs_house_${houseId}`); return s?JSON.parse(s):null; }catch(e){ return null; }
+}
+
+function saveSession(){
+  const session = { house: currentHouse, user: currentUser };
+  try{ localStorage.setItem('rs_session_v2', JSON.stringify(session)); }catch(e){}
+}
+
+// Restore session
+(function restoreSession(){
+  try{
+    const s = localStorage.getItem('rs_session_v2');
+    if(!s) return;
+    const saved = JSON.parse(s);
+    if(saved?.house?.id && saved?.user?.role){
+      currentHouse = saved.house;
+      currentUser  = saved.user;
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('app').style.display = 'block';
+      applyRoleUI();
+      initFirebase();
+    }
+  }catch(e){
+    try{ localStorage.removeItem('rs_session_v2'); }catch(e2){}
+  }
+})();
 
 /* ═══════════════════════════════════════════════════
    INITIAL DATA (used only if Firebase has no data yet)
@@ -751,77 +1012,6 @@ function isAdmin(){ return currentUser && currentUser.role === 'admin'; }
 /* ═══════════════════════════════════════════════════
    LOGIN / LOGOUT
 ═══════════════════════════════════════════════════ */
-function doLogin(){
-  const user = document.getElementById('login-user').value.trim().toLowerCase();
-  const pass = document.getElementById('login-pass').value;
-  const err  = document.getElementById('login-error');
-
-  if(!USERS[user] || USERS[user].password !== pass){
-    err.textContent = '❌ Username atau password salah';
-    document.getElementById('login-pass').value = '';
-    return;
-  }
-
-  err.textContent = '';
-  currentUser = { username: user, role: USERS[user].role };
-  try{ localStorage.setItem('rs_session', JSON.stringify(currentUser)); }catch(e){}
-  try{ if(window.storage) window.storage.set('rs_session', JSON.stringify(currentUser)); }catch(e){}
-
-  document.getElementById('login-screen').style.display = 'none';
-  document.getElementById('app').style.display = 'block';
-  applyRoleUI();
-  initFirebase();
-}
-
-function doLogout(){
-  currentUser = null;
-  try{ localStorage.removeItem('rs_session'); }catch(e){}
-  try{ if(db) db.goOffline(); }catch(e){}
-  document.getElementById('app').style.display = 'none';
-  document.getElementById('login-screen').style.display = 'flex';
-  document.getElementById('login-user').value = '';
-  document.getElementById('login-pass').value = '';
-  document.getElementById('login-error').textContent = '';
-}
-
-function applyRoleUI(){
-  const admin = isAdmin();
-  document.querySelectorAll('.admin-only').forEach(el => {
-    el.style.display = admin ? '' : 'none';
-  });
-  ['nav-bins','nav-history','nav-dashboard'].forEach(id=>{
-    const el=document.getElementById(id); if(el) el.style.display='';
-  });
-  const ac = document.getElementById('items-action-col');
-  if(ac) ac.style.display = admin ? '' : 'none';
-  const logoEl = document.querySelector('.logo');
-  if(logoEl && currentUser){
-    logoEl.innerHTML = `Rumah<span>Stock</span> <span class="role-badge ${currentUser.role}">${currentUser.role}</span>`;
-  }
-}
-
-// Restore session on page load — runs only if localStorage available
-(function restoreSession(){
-  try{
-    const s = localStorage.getItem('rs_session');
-    if(!s) return;
-    const saved = JSON.parse(s);
-    if(saved && saved.username && USERS[saved.username] &&
-       USERS[saved.username].role === saved.role){
-      currentUser = saved;
-      document.getElementById('login-screen').style.display = 'none';
-      document.getElementById('app').style.display = 'block';
-      applyRoleUI();
-      initFirebase();
-    } else {
-      try{ localStorage.removeItem('rs_session'); }catch(e){}
-    }
-  }catch(e){
-    // localStorage blocked or session corrupt — just show login screen normally
-    try{ localStorage.removeItem('rs_session'); }catch(e2){}
-  }
-})();
-
 /* ═══════════════════════════════════════════════════
    FIREBASE SYNC
 ═══════════════════════════════════════════════════ */
@@ -846,7 +1036,23 @@ function initFirebase(){
         firebase.initializeApp(FIREBASE_CONFIG);
       }
       db    = firebase.database();
-      dbRef = db.ref('rumahstock');
+      // Each house gets its own data path
+      const housePath = currentHouse?.id
+        ? `rumahstock_houses/${currentHouse.id}/data`
+        : 'rumahstock'; // legacy fallback
+      dbRef = db.ref(housePath);
+
+      // Also save house config to Firebase when online (ensures cross-device access)
+      if(currentHouse?.id && currentHouse?.adminPass){
+        db.ref(`rumahstock_houses/${currentHouse.id}/config`).once('value').then(snap=>{
+          if(!snap.val()) saveHouseConfig(currentHouse.id, {
+            name: currentHouse.name,
+            adminUser: currentHouse.adminUser,
+            adminPass: currentHouse.adminPass,
+            opPass: currentHouse.opPass
+          });
+        }).catch(()=>{});
+      }
 
       dbRef.on('value', snap => {
         const data = snap.val();

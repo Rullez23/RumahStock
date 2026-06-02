@@ -1157,11 +1157,16 @@ function openModal(type){
       '','Sesuai Stok','Rusak / Expired','Hilang','Pemakaian Tidak Tercatat',
       'Baru Diterima','Dikembalikan','Dipinjam','Lainnya'
     ];
-    const remarkOpts = REMARKS.map(r=>`<option value="${r}">${r||'— Pilih Keterangan —'}</option>`).join('');
+    const remarkOpts = REMARKS.map(r=>`<option value="${r}">${r||'— Wajib Pilih Keterangan —'}</option>`).join('');
+    const itemCount  = bin.items.length;
 
     const rows = bin.items.map((it,i)=>`
-      <div style="border-bottom:1px solid #f0f0f0;padding:10px 0;">
-        <div style="font-size:13px;font-weight:700;color:var(--dark);margin-bottom:6px;">${it.name}</div>
+      <div style="border-bottom:1px solid #f0f0f0;padding:10px 0;" id="oprow-${i}">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+          <div style="font-size:13px;font-weight:700;color:var(--dark);flex:1;">${it.name}</div>
+          <span id="opr-ok-${i}" style="font-size:12px;display:none;color:var(--green);">✅</span>
+          <span id="opr-no-${i}" style="font-size:12px;color:var(--red);">⚠️</span>
+        </div>
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
           <div style="font-size:11px;font-weight:700;color:#888;width:60px;">SYS QTY</div>
           <div style="font-size:15px;font-weight:800;color:var(--dark);width:40px;text-align:center;">${it.qty}</div>
@@ -1172,9 +1177,9 @@ function openModal(type){
                  style="width:68px;padding:6px 8px;border:1.5px solid #ddd;border-radius:6px;font-size:15px;font-weight:700;text-align:center;"/>
           <div class="opname-diff" id="opd-${i}" style="width:46px;text-align:center;font-weight:800;font-size:14px;">—</div>
         </div>
-        <select id="opr-${i}"
-          style="width:100%;padding:8px 10px;border:1.5px solid #ddd;border-radius:8px;
-                 font-size:13px;outline:none;margin-bottom:4px;background:#fafafa;">
+        <select id="opr-${i}" onchange="checkOpnameComplete(${itemCount})"
+          style="width:100%;padding:8px 10px;border:2px solid var(--red);border-radius:8px;
+                 font-size:13px;outline:none;margin-bottom:4px;background:#FFF5F5;">
           ${remarkOpts}
         </select>
         <input type="text" id="opn-${i}" placeholder="Catatan tambahan (opsional)…"
@@ -1184,8 +1189,15 @@ function openModal(type){
 
     document.getElementById('modal-body').innerHTML=`
       <div style="font-size:11px;font-weight:700;color:var(--teal);text-transform:uppercase;
-                  letter-spacing:.5px;margin-bottom:10px;">
+                  letter-spacing:.5px;margin-bottom:6px;">
         📋 ${bin.cat} — Rak ${bin.rak} Kotak ${bin.kotak}
+      </div>
+      <!-- Progress bar -->
+      <div style="background:#f0f0f0;border-radius:20px;height:8px;margin-bottom:10px;overflow:hidden;">
+        <div id="op-progress-bar" style="background:var(--red);height:8px;width:0%;border-radius:20px;transition:all .3s;"></div>
+      </div>
+      <div id="op-progress-label" style="font-size:11px;color:var(--red);font-weight:700;margin-bottom:10px;">
+        ⚠️ Semua keterangan wajib diisi — 0 / ${itemCount} selesai
       </div>
       ${rows}
       <div style="margin-top:14px;padding-top:12px;border-top:2px solid var(--light);">
@@ -1199,7 +1211,11 @@ function openModal(type){
       </div>`;
     document.getElementById('modal-footer').innerHTML=`
       <button class="btn-cancel" onclick="closeModal()">Batal</button>
-      <button class="btn-confirm-opname" onclick="confirmOpname()">✅ Simpan Opname</button>`;
+      <button id="btn-save-opname" onclick="confirmOpname()"
+        style="flex:1;padding:14px;background:#aaa;color:#fff;border:none;border-radius:10px;
+               font-size:15px;font-weight:700;cursor:not-allowed;">
+        ✅ Simpan Opname (${itemCount} belum diisi)
+      </button>`;
 
   }else if(type==='additem'){
     document.getElementById('modal-body').innerHTML=`
@@ -1288,29 +1304,107 @@ function confirmTx(type){
   showToast(type==='out'?`📤 ${qty} ${it.unit} diambil`:`📥 ${qty} ${it.unit} disimpan`);
 }
 
+function checkOpnameComplete(total){
+  let filled = 0;
+  for(let i = 0; i < total; i++){
+    const sel = document.getElementById(`opr-${i}`);
+    if(!sel) continue;
+    const hasValue = sel.value.trim() !== '';
+    // Update dropdown border
+    sel.style.border   = hasValue ? '2px solid var(--green)' : '2px solid var(--red)';
+    sel.style.background = hasValue ? '#F0FDF4' : '#FFF5F5';
+    // Update row indicator
+    const okEl = document.getElementById(`opr-ok-${i}`);
+    const noEl = document.getElementById(`opr-no-${i}`);
+    if(okEl) okEl.style.display = hasValue ? 'inline' : 'none';
+    if(noEl) noEl.style.display = hasValue ? 'none'   : 'inline';
+    if(hasValue) filled++;
+  }
+  const pct   = Math.round((filled / total) * 100);
+  const bar   = document.getElementById('op-progress-bar');
+  const label = document.getElementById('op-progress-label');
+  const btn   = document.getElementById('btn-save-opname');
+  const done  = filled === total;
+
+  if(bar){
+    bar.style.width      = pct + '%';
+    bar.style.background = done ? 'var(--green)' : filled > 0 ? 'var(--gold)' : 'var(--red)';
+  }
+  if(label){
+    label.style.color   = done ? 'var(--green)' : 'var(--red)';
+    label.textContent   = done
+      ? `✅ Semua keterangan lengkap — ${total} / ${total} selesai`
+      : `⚠️ Keterangan wajib diisi — ${filled} / ${total} selesai`;
+  }
+  if(btn){
+    btn.style.background  = done ? '#3730A3' : '#aaa';
+    btn.style.cursor      = done ? 'pointer'  : 'not-allowed';
+    btn.textContent       = done
+      ? '✅ Simpan Opname'
+      : `✅ Simpan Opname (${total - filled} belum diisi)`;
+  }
+}
+
 function confirmOpname(){
-  const changes=[];
+  const total = currentBin.items.length;
+
+  // Validate all remarks filled
+  const missing = [];
+  for(let i = 0; i < total; i++){
+    const sel = document.getElementById(`opr-${i}`);
+    if(sel && sel.value.trim() === ''){
+      missing.push(currentBin.items[i].name);
+    }
+  }
+  if(missing.length > 0){
+    showToast(`⚠️ Keterangan belum diisi: ${missing.length} item`);
+    // Scroll to first missing
+    const firstMissing = currentBin.items.findIndex((_,i)=>{
+      const s=document.getElementById(`opr-${i}`); return s && s.value.trim()==='';
+    });
+    if(firstMissing >= 0){
+      document.getElementById(`opr-${firstMissing}`)?.scrollIntoView({behavior:'smooth',block:'center'});
+    }
+    return;
+  }
+  const changes  = [];
+  const allItems = [];
   const generalNote = document.getElementById('op-general-note')?.value.trim() || '';
 
   currentBin.items.forEach((it,i)=>{
-    const actual  = parseInt(document.getElementById(`op-${i}`).value);
-    const remark  = document.getElementById(`opr-${i}`)?.value.trim() || '';
-    const itemNote= document.getElementById(`opn-${i}`)?.value.trim() || '';
-    const fullNote= [remark, itemNote].filter(Boolean).join(' · ') || generalNote || 'Stock Opname';
+    const actual   = parseInt(document.getElementById(`op-${i}`).value);
+    const remark   = document.getElementById(`opr-${i}`)?.value.trim() || '';
+    const itemNote = document.getElementById(`opn-${i}`)?.value.trim() || '';
+    if(isNaN(actual)) return;
 
-    if(!isNaN(actual) && actual !== it.qty){
-      changes.push({name:it.name, unit:it.unit, before:it.qty, after:actual, note:fullNote});
+    const hasChange = actual !== it.qty;
+    const fullNote  = [remark, itemNote].filter(Boolean).join(' · ')
+                      || (hasChange ? generalNote || 'Stock Opname' : 'Sesuai Stok');
+
+    // Track all items for history (including no-change)
+    allItems.push({ name:it.name, unit:it.unit, before:it.qty, after:actual, note:fullNote });
+
+    // Only update qty if there's a change
+    if(hasChange){
+      changes.push({ name:it.name, unit:it.unit, before:it.qty, after:actual, note:fullNote });
       it.qty = actual;
     }
   });
 
-  if(!changes.length){ showToast('Tidak ada perubahan'); closeModal(); return; }
-  changes.forEach(c =>
-    addHistory('opname', currentBin, c.name, Math.abs(c.after-c.before),
+  if(!allItems.length){ showToast('Tidak ada item untuk direcord'); return; }
+
+  // Record ALL items in history — including unchanged (diff=0)
+  allItems.forEach(c =>
+    addHistory('opname', currentBin, c.name, Math.abs(c.after - c.before),
                c.unit, c.before, c.after, c.note)
   );
+
   saveState(); renderItemsTable(currentBin); closeModal();
-  showToast(`✅ Opname selesai — ${changes.length} item diperbarui`);
+
+  const msg = changes.length
+    ? `✅ Opname selesai — ${allItems.length} item dicek, ${changes.length} diperbarui`
+    : `✅ Opname selesai — ${allItems.length} item dicek, semua sesuai`;
+  showToast(msg);
 }
 
 function confirmAddItem(){

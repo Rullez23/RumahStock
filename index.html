@@ -754,8 +754,8 @@ async function createNewHouse(){
   const opPass   = document.getElementById('new-op-pass').value;
   const errEl    = document.getElementById('new-house-error');
 
-  if(!name)           { errEl.textContent='❌ Nama rumah wajib diisi'; return; }
-  if(!adminUser)      { errEl.textContent='❌ Username admin wajib diisi'; return; }
+  if(!name)                { errEl.textContent='❌ Nama rumah wajib diisi'; return; }
+  if(!adminUser)           { errEl.textContent='❌ Username admin wajib diisi'; return; }
   if(adminPass.length < 6) { errEl.textContent='❌ Password admin min. 6 karakter'; return; }
   if(opPass.length < 6)    { errEl.textContent='❌ Password operator min. 6 karakter'; return; }
   errEl.textContent = '';
@@ -764,15 +764,11 @@ async function createNewHouse(){
   currentHouse  = { id: houseId, name, adminUser, adminPass, opPass };
   currentUser   = { username: adminUser, role: 'admin' };
 
-  // Save to Firebase
-  try {
-    await saveHouseConfig(houseId, { name, adminUser, adminPass, opPass });
-  } catch(e) {
-    // Offline — save locally
-    saveHouseLocally(currentHouse);
-  }
-
+  // ALWAYS save locally first — this is the primary fallback
+  saveHouseLocally(currentHouse);
+  // Also save full session so restore works immediately
   saveSession();
+
   document.getElementById('display-house-id').textContent = houseId;
   showStep('created');
 }
@@ -780,9 +776,9 @@ async function createNewHouse(){
 function enterAppAfterCreate(){
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app').style.display = 'block';
-  // Start with empty bins for new house
   state = { bins: [], history: [] };
   applyRoleUI();
+  // Firebase will save house config once connected (in initFirebase)
   initFirebase();
 }
 
@@ -834,33 +830,50 @@ async function loginExistingHouse(){
   if(!pass)   { errEl.textContent='❌ Password wajib diisi'; return; }
   errEl.textContent = '⏳ Mencari data rumah…';
 
-  // Try to load house config from Firebase
   let house = null;
-  try {
-    house = await loadHouseConfig(houseId);
-  } catch(e) {
-    house = loadHouseLocally(houseId);
+
+  // 1. Check localStorage first (works offline & same device)
+  house = loadHouseLocally(houseId);
+
+  // 2. Try Firebase if not found locally
+  if(!house){
+    try {
+      // Init Firebase temporarily just to load config
+      if(typeof firebase !== 'undefined'){
+        if(!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+        const snap = await firebase.database()
+          .ref(`rumahstock_houses/${houseId}/config`).once('value');
+        if(snap.val()){
+          house = { id: houseId, ...snap.val() };
+          saveHouseLocally(house); // cache locally for next time
+        }
+      }
+    } catch(e) {
+      // Firebase unavailable — house not found
+    }
   }
 
-  // Fallback: accept hardcoded credentials for existing Rullez23 house
+  // 3. Hardcoded fallback for original Rullez23 house
   if(!house && houseId === 'RUMAH-DEFAULT'){
     house = { id:'RUMAH-DEFAULT', name:'Rumah Rullez23',
               adminUser:'admin', adminPass:'admin123', opPass:'operator123' };
   }
 
-  if(!house){ errEl.textContent='❌ Kode rumah tidak ditemukan'; return; }
+  if(!house){
+    errEl.textContent='❌ Kode rumah tidak ditemukan. Pastikan kode benar atau buat rumah baru.';
+    return;
+  }
 
   // Validate credentials
   let role = null;
   if(user === house.adminUser && pass === house.adminPass) role = 'admin';
-  else if((user === 'operator' || user === house.adminUser+'_op') && pass === house.opPass) role = 'operator';
-  // Also accept generic 'operator' username
-  else if(user === 'operator' && pass === house.opPass) role = 'operator';
+  else if(user === 'operator' && pass === house.opPass)   role = 'operator';
 
   if(!role){ errEl.textContent='❌ Username atau password salah'; return; }
 
   currentHouse = house;
   currentUser  = { username: user, role };
+  saveHouseLocally(house); // ensure cached
   saveSession();
 
   document.getElementById('login-screen').style.display = 'none';
@@ -871,12 +884,16 @@ async function loginExistingHouse(){
 
 // Firebase house config helpers
 async function saveHouseConfig(houseId, config){
-  if(!db) return;
-  await firebase.database().ref(`rumahstock_houses/${houseId}/config`).set(config);
+  try{
+    if(typeof firebase==='undefined') return;
+    if(!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+    await firebase.database().ref(`rumahstock_houses/${houseId}/config`).set(config);
+  }catch(e){}
 }
 
 async function loadHouseConfig(houseId){
-  if(!db && !firebase.apps?.length) throw new Error('no firebase');
+  if(typeof firebase==='undefined') throw new Error('no firebase');
+  if(!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
   const snap = await firebase.database().ref(`rumahstock_houses/${houseId}/config`).once('value');
   if(!snap.val()) return null;
   return { id: houseId, ...snap.val() };
@@ -1042,15 +1059,17 @@ function initFirebase(){
         : 'rumahstock'; // legacy fallback
       dbRef = db.ref(housePath);
 
-      // Also save house config to Firebase when online (ensures cross-device access)
+      // Save house config to Firebase so other devices can find it
       if(currentHouse?.id && currentHouse?.adminPass){
         db.ref(`rumahstock_houses/${currentHouse.id}/config`).once('value').then(snap=>{
-          if(!snap.val()) saveHouseConfig(currentHouse.id, {
-            name: currentHouse.name,
-            adminUser: currentHouse.adminUser,
-            adminPass: currentHouse.adminPass,
-            opPass: currentHouse.opPass
-          });
+          if(!snap.val()){
+            db.ref(`rumahstock_houses/${currentHouse.id}/config`).set({
+              name: currentHouse.name,
+              adminUser: currentHouse.adminUser,
+              adminPass: currentHouse.adminPass,
+              opPass: currentHouse.opPass
+            });
+          }
         }).catch(()=>{});
       }
 

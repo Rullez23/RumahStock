@@ -1,0 +1,1012 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0"/>
+<title>RumahStock — Panduan Pengguna</title>
+<style>
+:root{
+  --dark:#1B2A3B;--mid:#2E4057;--teal:#048A81;--teal2:#0AB5A8;
+  --gold:#E8B84B;--red:#E05252;--green:#3CB371;--purple:#6C3FC4;
+  --orange:#E8813A;--white:#ffffff;--lgray:#F4F6F7;--mgray:#E8ECEF;
+  --gray:#7A8A99;--border:#D0D5DD;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{font-family:"Segoe UI",system-ui,sans-serif;background:#f0f4f7;color:var(--dark);}
+
+/* ── COVER ── */
+.cover{background:linear-gradient(135deg,var(--dark) 0%,var(--mid) 100%);padding:40px 20px 32px;}
+.cover-label{font-size:10px;color:var(--teal2);font-weight:700;letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;}
+.cover-title{font-size:36px;font-weight:900;color:#fff;line-height:1.1;margin-bottom:6px;}
+.cover-title span{color:var(--gold);}
+.cover-sub{font-size:13px;color:#888;margin-bottom:18px;}
+.cover-desc{background:var(--teal);border-radius:10px;padding:12px 16px;font-size:12px;color:rgba(255,255,255,.85);line-height:1.6;margin-bottom:16px;}
+.pill-row{display:flex;flex-wrap:wrap;gap:6px;}
+.pill{background:rgba(255,255,255,.1);border-radius:20px;padding:4px 12px;font-size:11px;color:rgba(255,255,255,.8);font-weight:600;}
+
+/* ── TEAL STRIP ── */
+.teal-strip{background:var(--teal);padding:8px 20px;display:flex;gap:16px;justify-content:center;flex-wrap:wrap;}
+.teal-strip span{font-size:11px;color:rgba(255,255,255,.9);font-weight:700;}
+
+/* ── TOC ── */
+.toc{max-width:680px;margin:0 auto;padding:20px 16px 0;}
+.toc-label{font-size:11px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;}
+.chapter-card{display:flex;align-items:center;background:#fff;border-radius:12px;margin-bottom:10px;
+  cursor:pointer;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.06);
+  border:1px solid var(--mgray);transition:transform .15s,box-shadow .15s;text-decoration:none;}
+.chapter-card:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(0,0,0,.1);}
+.chapter-icon{width:64px;min-height:76px;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;}
+.chapter-icon .emoji{font-size:22px;}
+.chapter-icon .num{font-size:10px;color:rgba(255,255,255,.7);font-weight:700;margin-top:2px;}
+.chapter-info{flex:1;padding:14px 16px;}
+.chapter-title{font-size:14px;font-weight:700;color:var(--dark);margin-bottom:3px;}
+.chapter-sub{font-size:12px;color:var(--gray);}
+.chapter-arrow{padding:0 16px;font-size:18px;color:var(--mgray);}
+
+/* ── QUICK REF ── */
+.quick-ref{background:var(--dark);border-radius:12px;padding:20px;margin:8px 16px 24px;max-width:648px;margin-left:auto;margin-right:auto;}
+.quick-ref-title{font-size:13px;font-weight:700;color:var(--gold);margin-bottom:12px;}
+.quick-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.quick-item{background:rgba(255,255,255,.07);border-radius:8px;padding:10px 12px;}
+.quick-item-label{font-size:10px;color:var(--teal2);font-weight:700;margin-bottom:3px;}
+.quick-item-val{font-size:11px;color:rgba(255,255,255,.75);}
+
+/* ── CHAPTER PAGE ── */
+#chapter-view{display:none;}
+.chapter-topbar{background:var(--dark);padding:12px 16px;display:flex;align-items:center;gap:12px;
+  position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(0,0,0,.3);}
+.back-btn{background:rgba(255,255,255,.1);border:none;color:#fff;padding:6px 14px;
+  border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;}
+.topbar-title{flex:1;font-size:14px;font-weight:700;color:#fff;}
+.nav-btns{display:flex;gap:6px;}
+.nav-btn{border:none;padding:6px 12px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;font-family:inherit;}
+.nav-btn.prev{background:rgba(255,255,255,.1);color:#fff;}
+.nav-btn.next{background:var(--teal);color:#fff;}
+
+.chapter-content{max-width:680px;margin:0 auto;padding:20px 16px;}
+
+/* ── SECTION HEADER ── */
+.section-header{border-radius:14px;padding:22px 24px;margin-bottom:22px;
+  display:flex;align-items:center;gap:18px;
+  background:linear-gradient(135deg,var(--dark) 0%,var(--mid) 100%);}
+.section-num{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-weight:900;font-size:18px;color:#fff;flex-shrink:0;}
+.section-header h2{font-size:20px;font-weight:800;color:#fff;margin-bottom:4px;}
+.section-header p{font-size:12px;color:#aaa;}
+
+/* ── COMPONENTS ── */
+.callout{display:flex;border-radius:10px;overflow:hidden;border:1px solid rgba(0,0,0,.08);margin-bottom:14px;}
+.callout-icon{width:52px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;}
+.callout-body{flex:1;padding:12px 14px;}
+.callout-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;}
+.callout-text{font-size:13px;color:var(--dark);line-height:1.5;}
+.callout-text p{margin-bottom:3px;}
+
+.step-card{display:flex;border-radius:12px;overflow:hidden;margin-bottom:12px;box-shadow:0 2px 10px rgba(0,0,0,.07);}
+.step-num{min-width:70px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:14px 8px;}
+.step-num .s-label{font-size:9px;color:rgba(255,255,255,.6);font-weight:700;letter-spacing:1px;text-transform:uppercase;}
+.step-num .s-num{font-size:34px;font-weight:900;color:#fff;line-height:1;}
+.step-body{flex:1;border:1px solid var(--border);border-left:none;}
+.step-title{padding:9px 14px;font-size:13px;font-weight:700;color:#fff;}
+.step-items{padding:8px 14px;}
+.step-item{display:flex;gap:8px;padding:5px 0;border-bottom:1px solid var(--lgray);font-size:12px;color:var(--dark);}
+.step-item:last-child{border-bottom:none;}
+.step-arrow{font-weight:700;font-size:12px;flex-shrink:0;}
+
+.how-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:3px;border-radius:12px;overflow:hidden;margin-bottom:16px;}
+.how-cell{padding:22px 14px;text-align:center;}
+.how-cell .h-icon{font-size:34px;margin-bottom:10px;}
+.how-cell .h-title{font-size:12px;font-weight:700;color:#fff;margin-bottom:5px;}
+.how-cell .h-desc{font-size:11px;color:rgba(255,255,255,.65);line-height:1.5;}
+
+.feature-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;}
+.feature-cell{border:1px solid var(--border);border-radius:10px;padding:14px;}
+.feature-cell .f-top{display:flex;gap:8px;align-items:center;margin-bottom:5px;}
+.feature-cell .f-icon{font-size:20px;}
+.feature-cell .f-title{font-size:12px;font-weight:700;}
+.feature-cell .f-desc{font-size:11px;color:var(--gray);}
+
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;}
+.panel{border-radius:12px;padding:18px;}
+.panel h4{font-size:13px;font-weight:700;margin-bottom:8px;}
+.panel p{font-size:12px;line-height:1.6;margin-bottom:6px;}
+.panel .li{display:flex;gap:6px;margin-bottom:5px;font-size:12px;}
+.panel .li-num{font-weight:700;font-size:12px;flex-shrink:0;}
+
+.navmock{display:flex;background:var(--dark);border-radius:10px;overflow:hidden;margin-bottom:14px;}
+.navtab{flex:1;padding:10px 4px;text-align:center;}
+.navtab .nt-icon{font-size:20px;}
+.navtab .nt-label{font-size:9px;font-weight:600;margin-top:2px;}
+
+.bin-badge{display:flex;border-radius:10px;overflow:hidden;margin-bottom:14px;box-shadow:0 4px 16px rgba(0,0,0,.12);}
+.bin-main{flex:1;padding:16px 18px;}
+.bin-main .b-tag{font-size:10px;font-weight:700;letter-spacing:1px;margin-bottom:4px;}
+.bin-main .b-id{font-size:17px;font-weight:900;color:#fff;margin-bottom:4px;}
+.bin-main .b-cat{font-size:12px;color:#888;margin-bottom:10px;}
+.bin-total{background:var(--gold);color:var(--dark);font-size:11px;font-weight:800;padding:3px 10px;border-radius:8px;display:inline-block;}
+.bin-rak{min-width:78px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:12px 10px;}
+.bin-rak .r-label{font-size:9px;font-weight:700;margin-bottom:2px;}
+.bin-rak .r-num{font-size:26px;font-weight:900;color:#fff;line-height:1;}
+.bin-rak .r-kotak{font-size:10px;margin-top:2px;}
+
+.flow5{display:grid;grid-template-columns:repeat(5,1fr);gap:3px;border-radius:12px;overflow:hidden;margin-bottom:16px;}
+.flow-cell{padding:16px 8px;text-align:center;}
+.flow-cell .fl-num{font-size:22px;margin-bottom:6px;}
+.flow-cell .fl-title{font-size:11px;font-weight:700;color:#fff;margin-bottom:3px;}
+.flow-cell .fl-desc{font-size:10px;color:rgba(255,255,255,.6);line-height:1.4;}
+
+.info-table{border-radius:10px;overflow:hidden;border:1px solid var(--border);margin-bottom:14px;}
+.info-row{display:flex;border-top:1px solid var(--border);}
+.info-row:first-child{border-top:none;}
+.info-cell{padding:10px 14px;font-size:12px;}
+
+.role-table{border-radius:10px;overflow:hidden;border:1px solid var(--border);margin-bottom:14px;}
+.role-head{display:grid;grid-template-columns:1fr 90px 90px;}
+.role-row{display:grid;grid-template-columns:1fr 90px 90px;border-top:1px solid var(--border);}
+.role-cell{padding:9px 12px;font-size:12px;}
+.role-cell.center{text-align:center;font-size:15px;}
+
+.opname-keterangan{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;}
+.ok-panel{border-radius:12px;padding:16px;}
+.ok-item{display:flex;gap:8px;align-items:center;padding:5px 0;border-bottom:1px solid var(--mgray);}
+.ok-item:last-child{border-bottom:none;}
+
+.dash-cards{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;}
+.dash-card{border:1px solid var(--border);border-radius:10px;padding:14px;}
+.dash-card-icon{font-size:20px;margin-bottom:6px;}
+.dash-card-title{font-size:12px;font-weight:700;margin-bottom:5px;}
+.dash-card-desc{font-size:11px;color:var(--gray);line-height:1.5;}
+
+.tip-list .tip-item{display:flex;gap:0;border-radius:8px;overflow:hidden;border:1px solid var(--border);margin-bottom:8px;}
+.tip-item-bar{width:6px;flex-shrink:0;}
+.tip-item-body{padding:11px 13px;flex:1;}
+.tip-item-title{font-size:12px;font-weight:700;margin-bottom:2px;}
+.tip-item-desc{font-size:11px;color:var(--dark);}
+
+.trouble-table{border-radius:10px;overflow:hidden;border:1px solid var(--border);margin-bottom:14px;}
+.t-head{display:grid;grid-template-columns:1fr 28px 1fr;background:var(--dark);}
+.t-row{display:grid;grid-template-columns:1fr 28px 1fr;border-top:1px solid var(--border);}
+.t-cell{padding:10px 12px;font-size:12px;}
+
+.bottom-nav{display:flex;gap:10px;margin-top:24px;}
+.bottom-btn{flex:1;padding:12px;border:none;border-radius:10px;cursor:pointer;font-size:13px;font-weight:700;font-family:inherit;}
+
+/* sub-section label */
+.sub-label{font-size:13px;font-weight:700;color:var(--dark);margin:16px 0 10px;}
+
+/* footer */
+.doc-footer{background:var(--dark);border-radius:12px;padding:20px;margin-top:16px;text-align:center;}
+.doc-footer .df-title{font-size:20px;font-weight:900;color:#fff;margin-bottom:6px;}
+.doc-footer .df-title span{color:var(--gold);}
+.doc-footer .df-sub{font-size:12px;color:#888;margin-bottom:4px;}
+.doc-footer .df-url{font-size:12px;color:var(--teal2);}
+
+.divider{border:none;border-top:2px solid var(--lgray);margin:16px 0;}
+</style>
+</head>
+<body>
+
+<!-- ══ TOC VIEW ════════════════════════════════════════════════════════════ -->
+<div id="toc-view">
+
+  <div class="cover">
+    <div class="cover-label">Buku Panduan Pengguna</div>
+    <div class="cover-title">Rumah<span>Stock</span></div>
+    <div class="cover-sub">User Tutorial Book &nbsp;·&nbsp; Version 1.0 &nbsp;·&nbsp; June 2026</div>
+    <div class="cover-desc">
+      Panduan lengkap penggunaan aplikasi manajemen inventori rumah berbasis QR Code — dari setup awal, transaksi harian, stock opname, hingga laporan lengkap.
+    </div>
+    <div class="pill-row">
+      <span class="pill">📷 QR Scanner</span>
+      <span class="pill">📦 18 Storage Bin</span>
+      <span class="pill">🔄 Real-time Sync</span>
+      <span class="pill">📊 Laporan Lengkap</span>
+      <span class="pill">👥 Admin &amp; Operator</span>
+    </div>
+  </div>
+
+  <div class="teal-strip">
+    <span>✓ 8 Bab Panduan</span>
+    <span>✓ 50+ Langkah Detail</span>
+    <span>✓ Visual &amp; Infografis</span>
+    <span>✓ Tips &amp; Troubleshooting</span>
+  </div>
+
+  <div class="toc">
+    <div class="toc-label">Daftar Isi</div>
+
+    <a class="chapter-card" onclick="openChapter(0)">
+      <div class="chapter-icon" style="background:#048A81"><span class="emoji">🏠</span><span class="num">01</span></div>
+      <div class="chapter-info"><div class="chapter-title">Mengenal RumahStock</div><div class="chapter-sub">Apa itu, cara kerja sistem, dan fitur utama</div></div>
+      <div class="chapter-arrow">›</div>
+    </a>
+    <a class="chapter-card" onclick="openChapter(1)">
+      <div class="chapter-icon" style="background:#1B2A3B"><span class="emoji">🔑</span><span class="num">02</span></div>
+      <div class="chapter-info"><div class="chapter-title">Persiapan Awal</div><div class="chapter-sub">Buat rumah baru, login, dan pengaturan awal</div></div>
+      <div class="chapter-arrow">›</div>
+    </a>
+    <a class="chapter-card" onclick="openChapter(2)">
+      <div class="chapter-icon" style="background:#048A81"><span class="emoji">🧭</span><span class="num">03</span></div>
+      <div class="chapter-info"><div class="chapter-title">Navigasi Aplikasi</div><div class="chapter-sub">Memahami menu utama dan tampilan bin</div></div>
+      <div class="chapter-arrow">›</div>
+    </a>
+    <a class="chapter-card" onclick="openChapter(3)">
+      <div class="chapter-icon" style="background:#1B2A3B"><span class="emoji">📤</span><span class="num">04</span></div>
+      <div class="chapter-info"><div class="chapter-title">Transaksi Harian</div><div class="chapter-sub">Cara AMBIL dan SIMPAN barang dari bin</div></div>
+      <div class="chapter-arrow">›</div>
+    </a>
+    <a class="chapter-card" onclick="openChapter(4)">
+      <div class="chapter-icon" style="background:#6C3FC4"><span class="emoji">🔢</span><span class="num">05</span></div>
+      <div class="chapter-info"><div class="chapter-title">Stock Opname</div><div class="chapter-sub">Pengecekan stok lengkap dengan keterangan wajib</div></div>
+      <div class="chapter-arrow">›</div>
+    </a>
+    <a class="chapter-card" onclick="openChapter(5)">
+      <div class="chapter-icon" style="background:#048A81"><span class="emoji">📊</span><span class="num">06</span></div>
+      <div class="chapter-info"><div class="chapter-title">Dashboard &amp; Laporan</div><div class="chapter-sub">Membaca data, tren konsumsi, dan laporan inventori</div></div>
+      <div class="chapter-arrow">›</div>
+    </a>
+    <a class="chapter-card" onclick="openChapter(6)">
+      <div class="chapter-icon" style="background:#1B2A3B"><span class="emoji">👤</span><span class="num">07</span></div>
+      <div class="chapter-info"><div class="chapter-title">Panduan Operator</div><div class="chapter-sub">Khusus asisten rumah dan pengguna operator</div></div>
+      <div class="chapter-arrow">›</div>
+    </a>
+    <a class="chapter-card" onclick="openChapter(7)">
+      <div class="chapter-icon" style="background:#E8813A"><span class="emoji">🛠️</span><span class="num">08</span></div>
+      <div class="chapter-info"><div class="chapter-title">Tips &amp; Troubleshooting</div><div class="chapter-sub">Solusi masalah umum dan tips penggunaan</div></div>
+      <div class="chapter-arrow">›</div>
+    </a>
+
+  </div>
+
+  <div class="quick-ref">
+    <div class="quick-ref-title">⚡ Quick Reference</div>
+    <div class="quick-grid">
+      <div class="quick-item"><div class="quick-item-label">App URL</div><div class="quick-item-val">rullez23.github.io/RumahStock</div></div>
+      <div class="quick-item"><div class="quick-item-label">Admin Login</div><div class="quick-item-val">username + admin password</div></div>
+      <div class="quick-item"><div class="quick-item-label">Operator Login</div><div class="quick-item-val">operator + operator password</div></div>
+      <div class="quick-item"><div class="quick-item-label">Kode Rumah</div><div class="quick-item-val">Format: RUMAH-XXXXXX</div></div>
+      <div class="quick-item"><div class="quick-item-label">Scan Bin</div><div class="quick-item-val">Scan QR → buka bin → AMBIL/SIMPAN</div></div>
+      <div class="quick-item"><div class="quick-item-label">Opname</div><div class="quick-item-val">Buka bin → OPNAME → isi semua keterangan</div></div>
+    </div>
+  </div>
+
+</div><!-- end toc-view -->
+
+
+<!-- ══ CHAPTER VIEW ════════════════════════════════════════════════════════ -->
+<div id="chapter-view">
+  <div class="chapter-topbar">
+    <button class="back-btn" onclick="closeChapter()">← Daftar Isi</button>
+    <div class="topbar-title" id="topbar-title"></div>
+    <div class="nav-btns">
+      <button class="nav-btn prev" id="btn-prev" onclick="prevChapter()">← Prev</button>
+      <button class="nav-btn next" id="btn-next" onclick="nextChapter()">Next →</button>
+    </div>
+  </div>
+  <div class="chapter-content" id="chapter-content"></div>
+</div>
+
+
+<script>
+// ── Chapter data ──────────────────────────────────────────────────────────
+const CHAPTERS = [
+
+// ── 0: Mengenal RumahStock ────────────────────────────────────────────────
+{
+  icon:"🏠", title:"Mengenal RumahStock", subtitle:"Apa itu, cara kerja sistem, dan fitur utama",
+  color:"#048A81",
+  html:`
+    <p style="font-size:14px;color:#1B2A3B;line-height:1.7;margin-bottom:16px;">
+      <strong>RumahStock</strong> adalah aplikasi web manajemen inventori rumah berbasis QR Code yang memungkinkan seluruh anggota keluarga melacak, mengelola, dan mengontrol persediaan barang di berbagai tempat penyimpanan secara digital dan real-time.
+    </p>
+
+    <div class="sub-label">Cara Kerja Sistem</div>
+    <div class="how-grid">
+      <div class="how-cell" style="background:#048A81">
+        <div class="h-icon">🏷️</div>
+        <div class="h-title">1. Label QR</div>
+        <div class="h-desc">Tempelkan label QR di setiap bin/kotak penyimpanan di rumah</div>
+      </div>
+      <div class="how-cell" style="background:#1B2A3B">
+        <div class="h-icon">📱</div>
+        <div class="h-title">2. Scan &amp; Aksi</div>
+        <div class="h-desc">Scan QR dengan ponsel untuk buka bin &amp; catat transaksi</div>
+      </div>
+      <div class="how-cell" style="background:#048A81">
+        <div class="h-icon">☁️</div>
+        <div class="h-title">3. Sync Otomatis</div>
+        <div class="h-desc">Data tersimpan ke Firebase &amp; sinkron ke semua perangkat</div>
+      </div>
+    </div>
+
+    <div class="sub-label">Fitur Utama</div>
+    <div class="feature-grid">
+      <div class="feature-cell" style="background:#F4F6F7">
+        <div class="f-top"><span class="f-icon">📷</span><span class="f-title" style="color:#048A81">QR Scanner</span></div>
+        <div class="f-desc">Scan label bin otomatis dengan kamera ponsel</div>
+      </div>
+      <div class="feature-cell" style="background:#fff">
+        <div class="f-top"><span class="f-icon">📦</span><span class="f-title" style="color:#1B2A3B">18 Storage Bin</span></div>
+        <div class="f-desc">Semua bin terpetakan dalam satu sistem</div>
+      </div>
+      <div class="feature-cell" style="background:#fff">
+        <div class="f-top"><span class="f-icon">📤</span><span class="f-title" style="color:#E05252">AMBIL (Out)</span></div>
+        <div class="f-desc">Catat barang yang dikeluarkan dari bin</div>
+      </div>
+      <div class="feature-cell" style="background:#F4F6F7">
+        <div class="f-top"><span class="f-icon">📥</span><span class="f-title" style="color:#3CB371">SIMPAN (In)</span></div>
+        <div class="f-desc">Catat restok atau barang masuk baru</div>
+      </div>
+      <div class="feature-cell" style="background:#F4F6F7">
+        <div class="f-top"><span class="f-icon">🔢</span><span class="f-title" style="color:#6C3FC4">Stock Opname</span></div>
+        <div class="f-desc">Hitung stok fisik + keterangan wajib per item</div>
+      </div>
+      <div class="feature-cell" style="background:#fff">
+        <div class="f-top"><span class="f-icon">📊</span><span class="f-title" style="color:#048A81">Dashboard</span></div>
+        <div class="f-desc">Statistik stok, tren konsumsi, aktivitas terkini</div>
+      </div>
+      <div class="feature-cell" style="background:#fff">
+        <div class="f-top"><span class="f-icon">📑</span><span class="f-title" style="color:#E8813A">Laporan</span></div>
+        <div class="f-desc">Per barang dan per bin dengan filter periode</div>
+      </div>
+      <div class="feature-cell" style="background:#F4F6F7">
+        <div class="f-top"><span class="f-icon">🖨️</span><span class="f-title" style="color:#1B2A3B">Print Kartu</span></div>
+        <div class="f-desc">Cetak label QR dan kartu stok per bin</div>
+      </div>
+    </div>
+
+    <div class="callout" style="border-color:#048A8133">
+      <div class="callout-icon" style="background:#048A81">ℹ️</div>
+      <div class="callout-body" style="background:#EFF8FF;border-left:3px solid #048A81">
+        <div class="callout-label" style="color:#048A81">INFO</div>
+        <div class="callout-text">
+          <p>App bisa diakses dari browser mana saja — tidak perlu install.</p>
+          <p>URL: <strong>https://rullez23.github.io/RumahStock</strong></p>
+          <p>Tambahkan ke Home Screen agar tampak seperti aplikasi native.</p>
+        </div>
+      </div>
+    </div>
+  `
+},
+
+// ── 1: Persiapan Awal ─────────────────────────────────────────────────────
+{
+  icon:"🔑", title:"Persiapan Awal", subtitle:"Buat rumah baru dan login pertama kali",
+  color:"#048A81",
+  html:`
+    <div class="callout" style="border-color:#048A8133">
+      <div class="callout-icon" style="background:#048A81">🌐</div>
+      <div class="callout-body" style="background:#EFF8FF;border-left:3px solid #048A81">
+        <div class="callout-label" style="color:#048A81">URL APLIKASI</div>
+        <div class="callout-text">
+          <p><strong>https://rullez23.github.io/RumahStock</strong></p>
+          <p>Buka di Safari atau Chrome pada ponsel Anda</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="sub-label">Pilih Mode</div>
+    <div class="two-col">
+      <div class="panel" style="background:#048A81">
+        <div style="font-size:28px;margin-bottom:10px">🏡</div>
+        <h4 style="color:#fff;margin-bottom:8px">RUMAH BARU</h4>
+        <p style="color:rgba(255,255,255,.75)">Buat sistem inventori dari awal. Pilih ini jika pertama kali menggunakan RumahStock.</p>
+      </div>
+      <div class="panel" style="background:#1B2A3B">
+        <div style="font-size:28px;margin-bottom:10px">🔑</div>
+        <h4 style="color:#fff;margin-bottom:8px">RUMAH EXISTING</h4>
+        <p style="color:rgba(255,255,255,.5)">Masuk ke rumah yang sudah dibuat. Butuh Kode Rumah dari Admin.</p>
+      </div>
+    </div>
+
+    <div class="sub-label">Membuat Rumah Baru</div>
+
+    <div class="step-card">
+      <div class="step-num" style="background:#048A81">
+        <span class="s-label">STEP</span><span class="s-num">1</span>
+      </div>
+      <div class="step-body">
+        <div class="step-title" style="background:#1B2A3B">Isi Form Rumah Baru</div>
+        <div class="step-items">
+          <div class="step-item"><span class="step-arrow" style="color:#048A81">→</span>Nama Rumah: identifikasi rumah Anda (misal: Rumah Keluarga Rully)</div>
+          <div class="step-item"><span class="step-arrow" style="color:#048A81">→</span>Admin Username: untuk akses penuh (misal: admin)</div>
+          <div class="step-item"><span class="step-arrow" style="color:#048A81">→</span>Admin Password: minimal 6 karakter — simpan baik-baik!</div>
+          <div class="step-item"><span class="step-arrow" style="color:#048A81">→</span>Operator Password: untuk asisten rumah — minimal 6 karakter</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-num" style="background:#E05252">
+        <span class="s-label">STEP</span><span class="s-num">2</span>
+      </div>
+      <div class="step-body">
+        <div class="step-title" style="background:#1B2A3B">⚠️ Simpan Kode Rumah — PENTING!</div>
+        <div class="step-items">
+          <div class="step-item"><span class="step-arrow" style="color:#E05252">→</span>Kode unik akan muncul (misal: RUMAH-AB12CD)</div>
+          <div class="step-item"><span class="step-arrow" style="color:#E05252">→</span>SCREENSHOT atau CATAT kode ini sebelum melanjutkan</div>
+          <div class="step-item"><span class="step-arrow" style="color:#E05252">→</span>Kode dibutuhkan untuk login dari perangkat lain</div>
+          <div class="step-item"><span class="step-arrow" style="color:#E05252">→</span>Kode TIDAK BISA dipulihkan jika hilang</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-num" style="background:#3CB371">
+        <span class="s-label">STEP</span><span class="s-num">3</span>
+      </div>
+      <div class="step-body">
+        <div class="step-title" style="background:#1B2A3B">Masuk ke Aplikasi</div>
+        <div class="step-items">
+          <div class="step-item"><span class="step-arrow" style="color:#3CB371">→</span>Tap tombol 'Masuk ke Aplikasi'</div>
+          <div class="step-item"><span class="step-arrow" style="color:#3CB371">→</span>Anda langsung masuk sebagai Admin</div>
+          <div class="step-item"><span class="step-arrow" style="color:#3CB371">→</span>Bagikan Kode Rumah + Operator Password ke anggota keluarga</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout" style="border-color:#E0525233">
+      <div class="callout-icon" style="background:#E05252">⚠️</div>
+      <div class="callout-body" style="background:#FFF0F0;border-left:3px solid #E05252">
+        <div class="callout-label" style="color:#E05252">PERHATIAN</div>
+        <div class="callout-text">Jangan menutup halaman sebelum mencatat Kode Rumah! Kode hanya ditampilkan sekali saat pertama dibuat.</div>
+      </div>
+    </div>
+  `
+},
+
+// ── 2: Navigasi ───────────────────────────────────────────────────────────
+{
+  icon:"🧭", title:"Navigasi Aplikasi", subtitle:"Memahami menu utama dan tampilan bin",
+  color:"#048A81",
+  html:`
+    <div class="sub-label">Menu Navigasi Utama</div>
+    <div class="navmock">
+      <div class="navtab" style="background:#048A81"><div class="nt-icon">📷</div><div class="nt-label" style="color:#fff">Scan</div></div>
+      <div class="navtab"><div class="nt-icon">📦</div><div class="nt-label" style="color:#666">Bins</div></div>
+      <div class="navtab"><div class="nt-icon">📋</div><div class="nt-label" style="color:#666">History</div></div>
+      <div class="navtab"><div class="nt-icon">📊</div><div class="nt-label" style="color:#666">Dashboard</div></div>
+      <div class="navtab"><div class="nt-icon">📑</div><div class="nt-label" style="color:#666">Reports</div></div>
+    </div>
+
+    <div class="info-table">
+      <div class="info-row" style="background:#048A81">
+        <div class="info-cell" style="width:52px;text-align:center;font-size:20px">📷</div>
+        <div style="padding:10px 14px">
+          <div style="font-size:13px;font-weight:700;color:#fff">Scan</div>
+          <div style="font-size:12px;color:rgba(255,255,255,.7)">Halaman utama — scan QR atau ketik ID bin. Akses AMBIL, SIMPAN, dan OPNAME dari sini.</div>
+        </div>
+      </div>
+      <div class="info-row" style="background:#F4F6F7">
+        <div class="info-cell" style="width:52px;background:#1B2A3B;text-align:center;font-size:20px">📦</div>
+        <div style="padding:10px 14px">
+          <div style="font-size:13px;font-weight:700;color:#1B2A3B">Bins</div>
+          <div style="font-size:12px;color:#7A8A99">Daftar semua storage bin. Tambah bin baru, lihat total stok, atau buka bin tertentu.</div>
+        </div>
+      </div>
+      <div class="info-row" style="background:#fff">
+        <div class="info-cell" style="width:52px;background:#048A81;text-align:center;font-size:20px">📋</div>
+        <div style="padding:10px 14px">
+          <div style="font-size:13px;font-weight:700;color:#1B2A3B">History</div>
+          <div style="font-size:12px;color:#7A8A99">Riwayat semua transaksi. Filter: Hari Ini, Minggu, Bulan, atau Custom tanggal.</div>
+        </div>
+      </div>
+      <div class="info-row" style="background:#F4F6F7">
+        <div class="info-cell" style="width:52px;background:#1B2A3B;text-align:center;font-size:20px">📊</div>
+        <div style="padding:10px 14px">
+          <div style="font-size:13px;font-weight:700;color:#1B2A3B">Dashboard</div>
+          <div style="font-size:12px;color:#7A8A99">Statistik stok habis, transaksi hari ini, grafik tren konsumsi harian/per barang/per kategori.</div>
+        </div>
+      </div>
+      <div class="info-row" style="background:#fff">
+        <div class="info-cell" style="width:52px;background:#048A81;text-align:center;font-size:20px">📑</div>
+        <div style="padding:10px 14px">
+          <div style="font-size:13px;font-weight:700;color:#1B2A3B">Reports <span style="background:#FFF7E6;color:#B45309;font-size:10px;padding:1px 6px;border-radius:6px;font-weight:700">Admin</span></div>
+          <div style="font-size:12px;color:#7A8A99">Laporan Opname dan Laporan Inventori — Per Barang dan Per Storage Bin.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sub-label">Tampilan Storage Bin</div>
+    <div class="bin-badge">
+      <div class="bin-main" style="background:#1B2A3B">
+        <div class="b-tag" style="color:#0AB5A8">STORAGE BIN ID</div>
+        <div class="b-id">BIN-TOI-D3-05</div>
+        <div class="b-cat">Perlengkapan Toilet</div>
+        <div class="bin-total">📦 Total: 47 unit</div>
+      </div>
+      <div class="bin-rak" style="background:#2E4057;border-left:3px solid #048A81">
+        <div class="r-label" style="color:#E8B84B">RAK</div>
+        <div class="r-num">D3</div>
+        <div class="r-kotak" style="color:#E8B84B">Kotak 5</div>
+      </div>
+    </div>
+
+    <div class="feature-grid">
+      <div class="feature-cell" style="background:#F4F6F7">
+        <div class="f-top"><span class="f-icon">🏷️</span><span class="f-title" style="color:#048A81">Bin ID</span></div>
+        <div class="f-desc">Kode unik identifikasi bin (misal: BIN-TOI-D3-05)</div>
+      </div>
+      <div class="feature-cell" style="background:#fff">
+        <div class="f-top"><span class="f-icon">📍</span><span class="f-title" style="color:#1B2A3B">Lokasi</span></div>
+        <div class="f-desc">Rak dan kotak tempat bin berada secara fisik</div>
+      </div>
+      <div class="feature-cell" style="background:#fff">
+        <div class="f-top"><span class="f-icon">📦</span><span class="f-title" style="color:#048A81">Total Stok</span></div>
+        <div class="f-desc">Badge emas = total semua unit di dalam bin</div>
+      </div>
+      <div class="feature-cell" style="background:#F4F6F7">
+        <div class="f-top"><span class="f-icon">⚠️</span><span class="f-title" style="color:#E05252">Indikator</span></div>
+        <div class="f-desc">Badge merah = ada item stok nol atau hampir habis</div>
+      </div>
+    </div>
+  `
+},
+
+// ── 3: Transaksi Harian ───────────────────────────────────────────────────
+{
+  icon:"📤", title:"Transaksi Harian", subtitle:"Cara AMBIL dan SIMPAN barang dari bin",
+  color:"#048A81",
+  html:`
+    <div class="sub-label">Langkah 1 — Buka Bin</div>
+    <div class="two-col">
+      <div class="panel" style="background:#048A81">
+        <h4 style="color:#fff;margin-bottom:10px">Cara A: Scan QR Code</h4>
+        <div style="font-size:28px;margin-bottom:10px">📷</div>
+        <div class="li" style="color:rgba(255,255,255,.8)"><span style="font-weight:700">1.</span>Tap tombol 'Scan QR Code'</div>
+        <div class="li" style="color:rgba(255,255,255,.8)"><span style="font-weight:700">2.</span>Izinkan akses kamera saat diminta</div>
+        <div class="li" style="color:rgba(255,255,255,.8)"><span style="font-weight:700">3.</span>Arahkan ke label QR di bin</div>
+        <div class="li" style="color:rgba(255,255,255,.8)"><span style="font-weight:700">4.</span>Bin terbuka otomatis saat terdeteksi</div>
+      </div>
+      <div class="panel" style="background:#1B2A3B">
+        <h4 style="color:#fff;margin-bottom:10px">Cara B: Manual Entry</h4>
+        <div style="font-size:28px;margin-bottom:10px">⌨️</div>
+        <div class="li" style="color:rgba(255,255,255,.5)"><span style="font-weight:700;color:#888">1.</span>Tap tombol 'Manual Entry'</div>
+        <div class="li" style="color:rgba(255,255,255,.5)"><span style="font-weight:700;color:#888">2.</span>Ketik Bin ID (misal: BIN-TOI-D3-05)</div>
+        <div class="li" style="color:rgba(255,255,255,.5)"><span style="font-weight:700;color:#888">3.</span>Atau tap bin di halaman Bins</div>
+        <div class="li" style="color:rgba(255,255,255,.5)"><span style="font-weight:700;color:#888">4.</span>Gunakan jika kamera tidak tersedia</div>
+      </div>
+    </div>
+
+    <div class="sub-label">Langkah 2 — Catat Transaksi</div>
+    <div class="two-col">
+      <div style="background:#FEE2E2;border:2px solid #FECACA;border-radius:12px;padding:18px">
+        <div style="font-size:15px;font-weight:700;color:#E05252;margin-bottom:8px">📤 AMBIL (Barang Keluar)</div>
+        <div style="font-size:11px;color:#7A8A99;margin-bottom:12px;font-style:italic">Saat mengambil barang dari bin</div>
+        <div class="li"><span class="li-num" style="color:#E05252">1.</span>Tap tombol merah AMBIL</div>
+        <div class="li"><span class="li-num" style="color:#E05252">2.</span>Pilih nama barang</div>
+        <div class="li"><span class="li-num" style="color:#E05252">3.</span>Lihat qty sistem saat ini</div>
+        <div class="li"><span class="li-num" style="color:#E05252">4.</span>Masukkan jumlah yang diambil</div>
+        <div class="li"><span class="li-num" style="color:#E05252">5.</span>Tambah catatan (opsional)</div>
+        <div class="li"><span class="li-num" style="color:#E05252">6.</span>Tap ✅ Ambil — stok berkurang</div>
+      </div>
+      <div style="background:#D1FAE5;border:2px solid #A7F3D0;border-radius:12px;padding:18px">
+        <div style="font-size:15px;font-weight:700;color:#3CB371;margin-bottom:8px">📥 SIMPAN (Barang Masuk)</div>
+        <div style="font-size:11px;color:#7A8A99;margin-bottom:12px;font-style:italic">Saat restok atau masukkan barang baru</div>
+        <div class="li"><span class="li-num" style="color:#3CB371">1.</span>Tap tombol hijau SIMPAN</div>
+        <div class="li"><span class="li-num" style="color:#3CB371">2.</span>Pilih nama barang</div>
+        <div class="li"><span class="li-num" style="color:#3CB371">3.</span>Lihat qty sistem saat ini</div>
+        <div class="li"><span class="li-num" style="color:#3CB371">4.</span>Masukkan jumlah yang disimpan</div>
+        <div class="li"><span class="li-num" style="color:#3CB371">5.</span>Tambah catatan (opsional)</div>
+        <div class="li"><span class="li-num" style="color:#3CB371">6.</span>Tap ✅ Simpan — stok bertambah</div>
+      </div>
+    </div>
+
+    <div class="callout" style="border-color:#E8B84B33">
+      <div class="callout-icon" style="background:#E8B84B">💡</div>
+      <div class="callout-body" style="background:#FFFBEB;border-left:3px solid #E8B84B">
+        <div class="callout-label" style="color:#B45309">TIP</div>
+        <div class="callout-text">Cek badge emas 'Total: X unit' di header bin untuk melihat total stok sebelum dan sesudah transaksi.</div>
+      </div>
+    </div>
+
+    <div class="sub-label">Indikator Stok di Tabel</div>
+    <div class="info-table">
+      <div class="info-row" style="background:#1B2A3B">
+        <div style="padding:8px 14px;font-size:12px;font-weight:700;color:#fff;flex:1">Warna Badge Qty</div>
+        <div style="padding:8px 14px;font-size:12px;font-weight:700;color:#fff;width:200px">Arti</div>
+      </div>
+      <div class="info-row" style="background:#F4F6F7">
+        <div style="padding:9px 14px;flex:1"><span style="background:#048A81;color:#fff;padding:3px 12px;border-radius:12px;font-weight:700;font-size:13px">12</span></div>
+        <div style="padding:9px 14px;font-size:12px;color:#1B2A3B;width:200px">Normal — stok aman</div>
+      </div>
+      <div class="info-row" style="background:#fff">
+        <div style="padding:9px 14px;flex:1"><span style="background:#E05252;color:#fff;padding:3px 12px;border-radius:12px;font-weight:700;font-size:13px">2</span></div>
+        <div style="padding:9px 14px;font-size:12px;color:#1B2A3B;width:200px">Hampir habis — segera restok</div>
+      </div>
+      <div class="info-row" style="background:#F4F6F7">
+        <div style="padding:9px 14px;flex:1"><span style="background:#999;color:#fff;padding:3px 12px;border-radius:12px;font-weight:700;font-size:13px">0</span></div>
+        <div style="padding:9px 14px;font-size:12px;color:#1B2A3B;width:200px">Stok habis — perlu restok</div>
+      </div>
+    </div>
+  `
+},
+
+// ── 4: Stock Opname ───────────────────────────────────────────────────────
+{
+  icon:"🔢", title:"Stock Opname", subtitle:"Pengecekan stok lengkap dengan keterangan wajib",
+  color:"#6C3FC4",
+  html:`
+    <div class="callout" style="border-color:#048A8133">
+      <div class="callout-icon" style="background:#048A81">ℹ️</div>
+      <div class="callout-body" style="background:#EFF8FF;border-left:3px solid #048A81">
+        <div class="callout-label" style="color:#048A81">INFO</div>
+        <div class="callout-text">
+          <p>Stock Opname = menghitung stok fisik dan membandingkan dengan data sistem.</p>
+          <p>Lakukan minimal 1x sebulan. Semua item WAJIB diisi keterangan.</p>
+          <p>Setelah opname, lakukan Stock Adjustment jika ada selisih.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="sub-label">Alur Proses Opname</div>
+    <div class="flow5">
+      <div class="flow-cell" style="background:#048A81">
+        <div class="fl-num">1️⃣</div><div class="fl-title">Buka Bin</div><div class="fl-desc">Scan QR atau manual entry</div>
+      </div>
+      <div class="flow-cell" style="background:#1B2A3B">
+        <div class="fl-num">2️⃣</div><div class="fl-title">Tap Opname</div><div class="fl-desc">Tap tombol 🔢 OPNAME</div>
+      </div>
+      <div class="flow-cell" style="background:#6C3FC4">
+        <div class="fl-num">3️⃣</div><div class="fl-title">Isi Form</div><div class="fl-desc">Hitung fisik &amp; isi keterangan</div>
+      </div>
+      <div class="flow-cell" style="background:#1B2A3B">
+        <div class="fl-num">4️⃣</div><div class="fl-title">Simpan</div><div class="fl-desc">Tap Simpan Opname</div>
+      </div>
+      <div class="flow-cell" style="background:#048A81">
+        <div class="fl-num">5️⃣</div><div class="fl-title">Adjustment</div><div class="fl-desc">Sesuaikan jika ada selisih</div>
+      </div>
+    </div>
+
+    <div class="sub-label">Form Opname — Detail</div>
+    <div class="opname-keterangan">
+      <div class="ok-panel" style="background:#1B2A3B">
+        <div style="font-size:13px;font-weight:700;color:#E8B84B;margin-bottom:12px">Untuk Setiap Barang:</div>
+        <div style="margin-bottom:8px"><div style="font-size:11px;font-weight:700;color:#0AB5A8">SYS QTY</div><div style="font-size:12px;color:#ccc">Jumlah menurut sistem (read-only)</div></div>
+        <div style="margin-bottom:8px"><div style="font-size:11px;font-weight:700;color:#0AB5A8">AKTUAL</div><div style="font-size:12px;color:#ccc">Hasil hitung fisik — isi angka sebenarnya</div></div>
+        <div style="margin-bottom:8px"><div style="font-size:11px;font-weight:700;color:#0AB5A8">DIFF</div><div style="font-size:12px;color:#ccc">Selisih otomatis (hijau = lebih, merah = kurang)</div></div>
+        <div style="margin-bottom:8px"><div style="font-size:11px;font-weight:700;color:#E05252">KETERANGAN ⚠️</div><div style="font-size:12px;color:#ccc">WAJIB diisi untuk setiap barang</div></div>
+        <div><div style="font-size:11px;font-weight:700;color:#0AB5A8">CATATAN</div><div style="font-size:12px;color:#ccc">Keterangan tambahan (opsional)</div></div>
+      </div>
+      <div class="ok-panel" style="background:#F4F6F7;border-left:4px solid #6C3FC4">
+        <div style="font-size:13px;font-weight:700;color:#6C3FC4;margin-bottom:10px">Pilihan Keterangan:</div>
+        <div class="ok-item"><span style="font-size:14px">✅</span><span style="font-size:12px;color:#1B2A3B">Sesuai Stok</span></div>
+        <div class="ok-item"><span style="font-size:14px">🔴</span><span style="font-size:12px;color:#1B2A3B">Rusak / Expired</span></div>
+        <div class="ok-item"><span style="font-size:14px">❓</span><span style="font-size:12px;color:#1B2A3B">Hilang</span></div>
+        <div class="ok-item"><span style="font-size:14px">📝</span><span style="font-size:12px;color:#1B2A3B">Pemakaian Tidak Tercatat</span></div>
+        <div class="ok-item"><span style="font-size:14px">📦</span><span style="font-size:12px;color:#1B2A3B">Baru Diterima</span></div>
+        <div class="ok-item"><span style="font-size:14px">🔄</span><span style="font-size:12px;color:#1B2A3B">Dikembalikan</span></div>
+        <div class="ok-item"><span style="font-size:14px">🤝</span><span style="font-size:12px;color:#1B2A3B">Dipinjam</span></div>
+        <div class="ok-item" style="border:none"><span style="font-size:14px">💬</span><span style="font-size:12px;color:#1B2A3B">Lainnya</span></div>
+      </div>
+    </div>
+
+    <div class="callout" style="border-color:#E0525233">
+      <div class="callout-icon" style="background:#E05252">⚠️</div>
+      <div class="callout-body" style="background:#FFF0F0;border-left:3px solid #E05252">
+        <div class="callout-label" style="color:#E05252">PERHATIAN</div>
+        <div class="callout-text">Tombol Simpan Opname hanya aktif jika SEMUA barang sudah diisi keterangannya. Progress bar di atas form menunjukkan berapa item yang sudah selesai.</div>
+      </div>
+    </div>
+
+    <div class="sub-label">Stock Adjustment (jika ada selisih)</div>
+
+    <div class="step-card">
+      <div class="step-num" style="background:#048A81"><span class="s-label">STEP</span><span class="s-num">1</span></div>
+      <div class="step-body">
+        <div class="step-title" style="background:#1B2A3B">Buka Reports → Opname Report</div>
+        <div class="step-items">
+          <div class="step-item"><span class="step-arrow" style="color:#048A81">→</span>Tap menu Reports → Opname Report</div>
+          <div class="step-item"><span class="step-arrow" style="color:#048A81">→</span>Cari sesi opname yang ingin disesuaikan</div>
+          <div class="step-item"><span class="step-arrow" style="color:#048A81">→</span>Tap tombol 📋 Detail</div>
+        </div>
+      </div>
+    </div>
+    <div class="step-card">
+      <div class="step-num" style="background:#E8813A"><span class="s-label">STEP</span><span class="s-num">2</span></div>
+      <div class="step-body">
+        <div class="step-title" style="background:#1B2A3B">Tap Stock Adjustment</div>
+        <div class="step-items">
+          <div class="step-item"><span class="step-arrow" style="color:#E8813A">→</span>Tombol ⚖️ Stock Adjustment muncul jika ada selisih</div>
+          <div class="step-item"><span class="step-arrow" style="color:#E8813A">→</span>Centang barang yang ingin disesuaikan</div>
+          <div class="step-item"><span class="step-arrow" style="color:#E8813A">→</span>Pilih alasan adjustment dari dropdown</div>
+        </div>
+      </div>
+    </div>
+    <div class="step-card">
+      <div class="step-num" style="background:#3CB371"><span class="s-label">STEP</span><span class="s-num">3</span></div>
+      <div class="step-body">
+        <div class="step-title" style="background:#1B2A3B">Terapkan Adjustment</div>
+        <div class="step-items">
+          <div class="step-item"><span class="step-arrow" style="color:#3CB371">→</span>Tap ✅ Terapkan Adjustment</div>
+          <div class="step-item"><span class="step-arrow" style="color:#3CB371">→</span>Stok sistem langsung diperbarui</div>
+          <div class="step-item"><span class="step-arrow" style="color:#3CB371">→</span>Perubahan tercatat di History dengan tag [Adjustment]</div>
+        </div>
+      </div>
+    </div>
+  `
+},
+
+// ── 5: Dashboard & Laporan ────────────────────────────────────────────────
+{
+  icon:"📊", title:"Dashboard & Laporan", subtitle:"Membaca data, tren konsumsi, dan laporan inventori",
+  color:"#048A81",
+  html:`
+    <div class="sub-label">4 Kartu Statistik Utama</div>
+    <div class="dash-cards">
+      <div class="dash-card" style="background:#F4F6F7;border-top:4px solid #048A81">
+        <div class="dash-card-icon">📦</div>
+        <div class="dash-card-title" style="color:#048A81">Total Bins</div>
+        <div class="dash-card-desc">Jumlah bin aktif. Tap untuk daftar lengkap &amp; navigasi langsung ke bin.</div>
+      </div>
+      <div class="dash-card" style="background:#fff;border-top:4px solid #1B2A3B">
+        <div class="dash-card-icon">🗂</div>
+        <div class="dash-card-title" style="color:#1B2A3B">Total Barang</div>
+        <div class="dash-card-desc">Total jenis barang di seluruh bin. Tap untuk lihat semua barang &amp; lokasinya.</div>
+      </div>
+      <div class="dash-card" style="background:#fff;border-top:4px solid #E05252">
+        <div class="dash-card-icon">⚠️</div>
+        <div class="dash-card-title" style="color:#E05252">Stok Habis</div>
+        <div class="dash-card-desc">Barang qty = 0. Tap untuk lihat daftar &amp; langsung ke bin untuk restok.</div>
+      </div>
+      <div class="dash-card" style="background:#F4F6F7;border-top:4px solid #E8813A">
+        <div class="dash-card-icon">📋</div>
+        <div class="dash-card-title" style="color:#E8813A">Transaksi Hari Ini</div>
+        <div class="dash-card-desc">Jumlah transaksi hari ini. Tap untuk filter Hari Ini / Minggu / Bulan / Custom.</div>
+      </div>
+    </div>
+
+    <div class="sub-label">Grafik Tren Konsumsi</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px">
+      <div style="background:#F4F6F7;border:1px solid #E8ECEF;border-radius:10px;padding:14px">
+        <div style="font-size:20px;margin-bottom:6px">📅</div>
+        <div style="font-size:12px;font-weight:700;color:#048A81;margin-bottom:4px">Harian</div>
+        <div style="font-size:11px;color:#7A8A99;line-height:1.5">Bar chart per hari. Hari ini = warna emas. Pilih 7/30/90 hari.</div>
+      </div>
+      <div style="background:#1B2A3B;border-radius:10px;padding:14px">
+        <div style="font-size:20px;margin-bottom:6px">🏆</div>
+        <div style="font-size:12px;font-weight:700;color:#fff;margin-bottom:4px">Per Barang</div>
+        <div style="font-size:11px;color:#888;line-height:1.5">Ranking barang paling banyak diambil. Bar horizontal.</div>
+      </div>
+      <div style="background:#F4F6F7;border:1px solid #E8ECEF;border-radius:10px;padding:14px">
+        <div style="font-size:20px;margin-bottom:6px">🥧</div>
+        <div style="font-size:12px;font-weight:700;color:#048A81;margin-bottom:4px">Per Kategori</div>
+        <div style="font-size:11px;color:#7A8A99;line-height:1.5">Proporsi konsumsi per kategori bin dengan warna berbeda.</div>
+      </div>
+    </div>
+
+    <div class="sub-label">Laporan Inventori (Admin Only)</div>
+    <div class="two-col">
+      <div class="panel" style="background:#048A81">
+        <h4 style="color:#fff;margin-bottom:8px">🗂 Per Barang</h4>
+        <p style="color:rgba(255,255,255,.8)">Matrix semua barang: Nama / Qty / Total Masuk / Total Keluar / Status</p>
+        <p style="color:#E8B84B;font-weight:700;font-size:12px">Status: OK / Kritis / Habis / Aktif</p>
+        <p style="color:rgba(255,255,255,.7);font-size:12px">Tap baris barang untuk lihat lokasi bin &amp; detail pergerakan.</p>
+      </div>
+      <div class="panel" style="background:#1B2A3B">
+        <h4 style="color:#fff;margin-bottom:8px">📦 Per Storage Bin</h4>
+        <p style="color:rgba(255,255,255,.6)">Setiap bin = kartu dengan total unit, badge masuk/keluar, dan tabel detail item.</p>
+        <p style="color:#E8B84B;font-weight:700;font-size:12px">Tap ▾ Detail Item untuk expand tabel</p>
+        <p style="color:rgba(255,255,255,.5);font-size:12px">Filter per kategori atau per bin tertentu.</p>
+      </div>
+    </div>
+
+    <div class="callout" style="border-color:#E8B84B33">
+      <div class="callout-icon" style="background:#E8B84B">💡</div>
+      <div class="callout-body" style="background:#FFFBEB;border-left:3px solid #E8B84B">
+        <div class="callout-label" style="color:#B45309">TIP</div>
+        <div class="callout-text">Tap 🖨️ Print / Export Report untuk mencetak laporan sebagai PDF. Semua detail otomatis diperluas saat dicetak.</div>
+      </div>
+    </div>
+
+    <div class="sub-label">Riwayat Transaksi (History)</div>
+    <div class="info-table">
+      <div class="info-row" style="background:#1B2A3B">
+        <div style="padding:8px 14px;font-size:12px;font-weight:700;color:#fff;flex:1">Filter</div>
+        <div style="padding:8px 14px;font-size:12px;font-weight:700;color:#fff;flex:2">Keterangan</div>
+      </div>
+      <div class="info-row" style="background:#F4F6F7"><div style="padding:9px 14px;font-size:12px;font-weight:700;color:#048A81;flex:1">Hari Ini</div><div style="padding:9px 14px;font-size:12px;color:#1B2A3B;flex:2">Semua transaksi hari ini saja</div></div>
+      <div class="info-row" style="background:#fff"><div style="padding:9px 14px;font-size:12px;font-weight:700;color:#048A81;flex:1">Minggu Ini</div><div style="padding:9px 14px;font-size:12px;color:#1B2A3B;flex:2">Dari Senin minggu ini</div></div>
+      <div class="info-row" style="background:#F4F6F7"><div style="padding:9px 14px;font-size:12px;font-weight:700;color:#048A81;flex:1">Bulan Ini</div><div style="padding:9px 14px;font-size:12px;color:#1B2A3B;flex:2">Semua transaksi bulan ini</div></div>
+      <div class="info-row" style="background:#fff"><div style="padding:9px 14px;font-size:12px;font-weight:700;color:#048A81;flex:1">Custom</div><div style="padding:9px 14px;font-size:12px;color:#1B2A3B;flex:2">Pilih rentang tanggal bebas</div></div>
+    </div>
+  `
+},
+
+// ── 6: Panduan Operator ───────────────────────────────────────────────────
+{
+  icon:"👤", title:"Panduan Operator", subtitle:"Khusus asisten rumah dan pengguna operator",
+  color:"#6C3FC4",
+  html:`
+    <div class="callout" style="border-color:#6C3FC433">
+      <div class="callout-icon" style="background:#6C3FC4">👤</div>
+      <div class="callout-body" style="background:#EEF2FF;border-left:3px solid #6C3FC4">
+        <div class="callout-label" style="color:#6C3FC4">UNTUK SIAPA?</div>
+        <div class="callout-text">
+          <p>Panduan ini khusus untuk pengguna dengan akses <strong>Operator</strong>.</p>
+          <p>Operator dapat melihat semua bin dan mencatat transaksi harian.</p>
+          <p>Operator tidak bisa menambah/menghapus bin atau barang.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="sub-label">Login sebagai Operator</div>
+
+    <div class="step-card">
+      <div class="step-num" style="background:#6C3FC4"><span class="s-label">STEP</span><span class="s-num">1</span></div>
+      <div class="step-body">
+        <div class="step-title" style="background:#1B2A3B">Buka Aplikasi &amp; Pilih Mode</div>
+        <div class="step-items">
+          <div class="step-item"><span class="step-arrow" style="color:#6C3FC4">→</span>Buka https://rullez23.github.io/RumahStock</div>
+          <div class="step-item"><span class="step-arrow" style="color:#6C3FC4">→</span>Tap '🔑 Rumah Existing'</div>
+          <div class="step-item"><span class="step-arrow" style="color:#6C3FC4">→</span>Masukkan Kode Rumah (dari Admin)</div>
+        </div>
+      </div>
+    </div>
+    <div class="step-card">
+      <div class="step-num" style="background:#6C3FC4"><span class="s-label">STEP</span><span class="s-num">2</span></div>
+      <div class="step-body">
+        <div class="step-title" style="background:#1B2A3B">Masukkan Kredensial</div>
+        <div class="step-items">
+          <div class="step-item"><span class="step-arrow" style="color:#6C3FC4">→</span>Username: 'operator' (atau yang diberikan Admin)</div>
+          <div class="step-item"><span class="step-arrow" style="color:#6C3FC4">→</span>Password: operator password (dari Admin)</div>
+          <div class="step-item"><span class="step-arrow" style="color:#6C3FC4">→</span>Tap tombol Masuk</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sub-label">Hak Akses Operator vs Admin</div>
+    <div class="role-table">
+      <div class="role-head">
+        <div style="padding:10px 12px;font-size:12px;font-weight:700;color:#fff;background:#1B2A3B">Fitur</div>
+        <div style="padding:10px 0;font-size:12px;font-weight:700;color:#fff;background:#048A81;text-align:center">👑 Admin</div>
+        <div style="padding:10px 0;font-size:12px;font-weight:700;color:#fff;background:#6C3FC4;text-align:center">👤 Operator</div>
+      </div>
+      ${[
+        ["Lihat semua bin dan stok","✅","✅"],
+        ["AMBIL (Barang Keluar)","✅","✅"],
+        ["SIMPAN (Barang Masuk)","✅","✅"],
+        ["Lihat History Transaksi","✅","✅"],
+        ["Lihat Dashboard &amp; Tren","✅","✅"],
+        ["Tambah / Edit / Hapus Barang","✅","❌"],
+        ["Tambah / Edit / Hapus Bin","✅","❌"],
+        ["Stock Opname","✅","❌"],
+        ["Laporan &amp; Print","✅","❌"],
+      ].map(([feat,admin,op],i) => `
+        <div class="role-row" style="background:${i%2===0?"#F4F6F7":"#fff"}">
+          <div class="role-cell">${feat}</div>
+          <div class="role-cell center">${admin}</div>
+          <div class="role-cell center">${op}</div>
+        </div>`).join("")}
+    </div>
+
+    <div class="sub-label">Rutinitas Harian Operator</div>
+    <div class="info-table">
+      ${[
+        ["Pagi","#048A81","Cek Dashboard — lihat apakah ada stok habis (⚠️ merah)"],
+        ["Saat Pakai","#1B2A3B","Scan bin → tap AMBIL → pilih barang → masukkan jumlah → Ambil"],
+        ["Saat Restok","#048A81","Scan bin → tap SIMPAN → pilih barang → masukkan jumlah → Simpan"],
+        ["Sore","#1B2A3B","Pastikan semua pengambilan hari ini sudah tercatat di History"],
+      ].map(([time,bg,task]) => `
+        <div class="info-row">
+          <div style="width:70px;background:${bg};padding:12px 8px;text-align:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0">${time}</div>
+          <div style="padding:12px 14px;font-size:13px;color:#1B2A3B;flex:1">${task}</div>
+        </div>`).join("")}
+    </div>
+  `
+},
+
+// ── 7: Tips & Troubleshooting ─────────────────────────────────────────────
+{
+  icon:"🛠️", title:"Tips & Troubleshooting", subtitle:"Solusi masalah umum dan tips penggunaan",
+  color:"#E8813A",
+  html:`
+    <div class="sub-label">Tips Penggunaan</div>
+    <div class="tip-list">
+      ${[
+        ["#E8B84B","📱 Home Screen","Buka URL di Safari → tap Share → 'Add to Home Screen'. App tampil seperti aplikasi native di ponsel."],
+        ["#048A81","📷 Scan Optimal","Pastikan pencahayaan cukup. Gunakan 🔦 Torch jika gelap. Tahan ponsel stabil 15–20cm dari QR code."],
+        ["#E8813A","🔄 Data Tidak Muncul","Cek koneksi internet. Lihat indikator sync (🟢 online / 🔴 offline) di pojok kanan atas nav bar."],
+        ["#6C3FC4","📊 Export Laporan","Reports → Inventory Report → atur filter → tap 🖨️ Print / Export → Save as PDF di browser."],
+        ["#048A81","✏️ Edit Barang","Buka bin → tap ✏️ di baris barang → ubah nama, qty, atau unit → Simpan. (Admin only)"],
+        ["#1B2A3B","🔐 Ganti Password","Edit file index.html → cari objek USERS → ubah password → upload ulang ke GitHub."],
+      ].map(([color,title,desc]) => `
+        <div class="tip-item">
+          <div class="tip-item-bar" style="background:${color}"></div>
+          <div class="tip-item-body" style="background:${color}22">
+            <div class="tip-item-title" style="color:${color}">${title}</div>
+            <div class="tip-item-desc">${desc}</div>
+          </div>
+        </div>`).join("")}
+    </div>
+
+    <div class="sub-label">Troubleshooting</div>
+    <div class="trouble-table">
+      <div class="t-head">
+        <div style="padding:9px 12px;font-size:12px;font-weight:700;color:#fff">Masalah</div>
+        <div></div>
+        <div style="padding:9px 12px;font-size:12px;font-weight:700;color:#fff">Solusi</div>
+      </div>
+      ${[
+        ["Kode Rumah tidak ditemukan","Pastikan huruf kapital semua. Format: RUMAH-XXXXXX. Coba dari perangkat yang sama saat membuat rumah."],
+        ["QR scan tidak bekerja","Cek izin kamera: Settings → Safari/Chrome → Camera → Allow. iOS 17+ atau gunakan Chrome Android."],
+        ["Data tidak sinkron antar HP","Periksa koneksi internet. Tunggu indikator 🔴 berubah jadi 🟢. Data lokal tetap aman."],
+        ["Tombol Simpan Opname abu-abu","Semua barang harus sudah dipilih keterangannya. Cek progress bar — harus 100%."],
+        ["App blank saat dibuka","Refresh halaman. Buka tab baru. Pastikan URL: rullez23.github.io/RumahStock"],
+        ["Stok tidak berkurang setelah AMBIL","Cek koneksi — mungkin mode offline. Data tersimpan lokal &amp; akan sync otomatis saat online."],
+      ].map(([prob,sol],i) => `
+        <div class="t-row" style="background:${i%2===0?"#FFF8F8":"#fff"}">
+          <div class="t-cell" style="color:#E05252">${prob}</div>
+          <div style="display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#048A81;border-left:1px solid #E8ECEF;border-right:1px solid #E8ECEF">→</div>
+          <div class="t-cell" style="color:#1B2A3B">${sol}</div>
+        </div>`).join("")}
+    </div>
+
+    <div class="doc-footer">
+      <div class="df-title">Rumah<span>Stock</span></div>
+      <div class="df-sub">Buku Panduan Pengguna &nbsp;·&nbsp; Version 1.0 &nbsp;·&nbsp; June 2026</div>
+      <div class="df-url">https://rullez23.github.io/RumahStock</div>
+    </div>
+  `
+},
+
+];
+
+// ── Navigation logic ──────────────────────────────────────────────────────
+let currentChapter = 0;
+
+function openChapter(idx){
+  currentChapter = idx;
+  const ch = CHAPTERS[idx];
+  document.getElementById("toc-view").style.display = "none";
+  document.getElementById("chapter-view").style.display = "block";
+  document.getElementById("topbar-title").textContent = ch.icon + " " + ch.title;
+  renderChapter(idx);
+  window.scrollTo(0,0);
+}
+
+function renderChapter(idx){
+  const ch = CHAPTERS[idx];
+  const content = document.getElementById("chapter-content");
+
+  // Section header
+  const headerHTML = `
+    <div class="section-header" style="border-left-color:${ch.color}">
+      <div class="section-num" style="background:${ch.color};box-shadow:0 4px 14px ${ch.color}55">${String(idx+1).padStart(2,"0")}</div>
+      <div>
+        <h2>${ch.title}</h2>
+        <p>${ch.subtitle}</p>
+      </div>
+    </div>`;
+
+  // Bottom nav
+  const prevBtn = idx > 0
+    ? `<button class="bottom-btn" style="background:#fff;border:1px solid #E8ECEF;color:#1B2A3B" onclick="openChapter(${idx-1})">← ${CHAPTERS[idx-1].icon} ${CHAPTERS[idx-1].title}</button>`
+    : "";
+  const nextBtn = idx < CHAPTERS.length-1
+    ? `<button class="bottom-btn" style="background:${CHAPTERS[idx+1].color};color:#fff" onclick="openChapter(${idx+1})">${CHAPTERS[idx+1].icon} ${CHAPTERS[idx+1].title} →</button>`
+    : "";
+  const bottomNav = `<div class="bottom-nav">${prevBtn}${nextBtn}</div>`;
+
+  content.innerHTML = headerHTML + ch.html + bottomNav;
+
+  // Topbar prev/next buttons
+  document.getElementById("btn-prev").style.display = idx > 0 ? "block" : "none";
+  document.getElementById("btn-next").style.display = idx < CHAPTERS.length-1 ? "block" : "none";
+}
+
+function closeChapter(){
+  document.getElementById("chapter-view").style.display = "none";
+  document.getElementById("toc-view").style.display = "block";
+  window.scrollTo(0,0);
+}
+
+function prevChapter(){
+  if(currentChapter > 0) openChapter(currentChapter-1);
+}
+function nextChapter(){
+  if(currentChapter < CHAPTERS.length-1) openChapter(currentChapter+1);
+}
+</script>
+</body>
+</html>

@@ -369,10 +369,26 @@ nav{background:var(--dark);color:#fff;display:flex;align-items:center;
     <p id="hc-desc" style="font-size:13px;color:#666;margin-bottom:16px;text-align:center;">
       Simpan Kode Rumah ini — diperlukan untuk masuk dari perangkat lain
     </p>
-    <div style="background:var(--dark);border-radius:12px;padding:16px;text-align:center;margin-bottom:16px;">
+    <div style="background:var(--dark);border-radius:12px;padding:16px;text-align:center;margin-bottom:12px;">
       <div id="hc-code-label" style="font-size:11px;color:var(--gold);font-weight:700;letter-spacing:1px;margin-bottom:8px;">KODE RUMAH</div>
-      <div id="display-house-id" style="font-size:24px;font-weight:900;color:#fff;letter-spacing:3px;"></div>
-      <div id="hc-share-hint" style="font-size:11px;color:#888;margin-top:8px;">Bagikan kode ini ke anggota keluarga</div>
+      <div id="display-house-id" style="font-size:24px;font-weight:900;color:#fff;letter-spacing:3px;margin-bottom:12px;"></div>
+      <!-- Copy & Share buttons -->
+      <div style="display:flex;gap:8px;justify-content:center;">
+        <button id="btn-copy-code" onclick="copyHouseCode()"
+          style="padding:10px 20px;background:var(--teal);color:#fff;border:none;
+                 border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;
+                 display:flex;align-items:center;gap:6px;">
+          📋 <span id="btn-copy-label">Copy Code</span>
+        </button>
+        <button id="btn-share-code" onclick="shareHouseCode()"
+          style="padding:10px 20px;background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.2);
+                 border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;
+                 display:flex;align-items:center;gap:6px;">
+          🔗 <span id="btn-share-label">Share</span>
+        </button>
+      </div>
+      <div id="hc-copy-confirm" style="font-size:11px;color:var(--teal2);margin-top:8px;min-height:16px;font-weight:600;"></div>
+      <div id="hc-share-hint" style="font-size:11px;color:#888;margin-top:4px;">Bagikan kode ini ke anggota keluarga</div>
     </div>
     <div id="hc-warning" style="background:#FFF7E6;border-radius:10px;padding:12px;border:1px solid #FDE68A;
                 font-size:12px;color:#92400E;margin-bottom:16px;">
@@ -781,6 +797,9 @@ const I18N = {
     bagikanKode: "Bagikan kode ini ke anggota keluarga",
     warningKode: "⚠️ Screenshot atau catat kode ini sekarang. Kode tidak bisa dipulihkan jika hilang.",
     btnMasukApp: "Masuk ke Aplikasi →",
+    btnCopyCode: "Salin Kode",
+    btnShare: "Bagikan",
+    copyConfirm: "✅ Tersalin!",
     // Nav
     navScan: "Scan", navBins: "Bins", navHistory: "History",
     navDashboard: "Dashboard", navReports: "Reports",
@@ -893,6 +912,9 @@ const I18N = {
     bagikanKode: "Share this code with family members",
     warningKode: "⚠️ Screenshot or write down this code now. It cannot be recovered if lost.",
     btnMasukApp: "Enter App →",
+    btnCopyCode: "Copy Code",
+    btnShare: "Share",
+    copyConfirm: "✅ Copied!",
     navScan: "Scan", navBins: "Bins", navHistory: "History",
     navDashboard: "Dashboard", navReports: "Reports",
     navHelp: "Guide", navLogout: "Sign Out",
@@ -1021,6 +1043,8 @@ function applyLang(){
   tx('hc-share-hint', t('bagikanKode'));
   s('hc-warning', t('warningKode'));
   tx('hc-btn-enter', t('btnMasukApp'));
+  tx('btn-copy-label',  t('btnCopyCode'));
+  tx('btn-share-label', t('btnShare'));
 
   // Nav (only if app is visible)
   if(document.getElementById('app').style.display !== 'none'){
@@ -1136,6 +1160,74 @@ function genHouseId(){
   let id = 'RUMAH-';
   for(let i=0;i<6;i++) id += chars[Math.floor(Math.random()*chars.length)];
   return id;
+}
+
+function copyHouseCode(){
+  const code = document.getElementById('display-house-id')?.textContent || '';
+  if(!code) return;
+  const confirm = document.getElementById('hc-copy-confirm');
+  const btn     = document.getElementById('btn-copy-label');
+
+  // Try modern clipboard API first
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(code).then(()=>{
+      if(confirm) confirm.textContent = lang==='en' ? '✅ Copied!' : '✅ Tersalin!';
+      if(btn) btn.textContent = lang==='en' ? 'Copied!' : 'Tersalin!';
+      setTimeout(()=>{
+        if(confirm) confirm.textContent = '';
+        if(btn) btn.textContent = lang==='en' ? 'Copy Code' : 'Salin Kode';
+      }, 2500);
+    }).catch(()=> fallbackCopy(code));
+  } else {
+    fallbackCopy(code);
+  }
+}
+
+function fallbackCopy(text){
+  // Create temp input, select, copy
+  const inp = document.createElement('input');
+  inp.value = text;
+  inp.style.position = 'fixed';
+  inp.style.opacity  = '0';
+  document.body.appendChild(inp);
+  inp.focus(); inp.select();
+  try{
+    document.execCommand('copy');
+    const confirm = document.getElementById('hc-copy-confirm');
+    const btn     = document.getElementById('btn-copy-label');
+    if(confirm) confirm.textContent = lang==='en' ? '✅ Copied!' : '✅ Tersalin!';
+    if(btn) btn.textContent = lang==='en' ? 'Copied!' : 'Tersalin!';
+    setTimeout(()=>{
+      if(confirm) confirm.textContent = '';
+      if(btn) btn.textContent = lang==='en' ? 'Copy Code' : 'Salin Kode';
+    }, 2500);
+  }catch(e){
+    const confirm = document.getElementById('hc-copy-confirm');
+    if(confirm) confirm.textContent = lang==='en' ? '⚠️ Copy manually: '+text : '⚠️ Salin manual: '+text;
+  }
+  document.body.removeChild(inp);
+}
+
+function shareHouseCode(){
+  const code     = document.getElementById('display-house-id')?.textContent || '';
+  const houseName= currentHouse?.name || 'RumahStock';
+  const appUrl   = window.location.origin + window.location.pathname;
+  const msgEN    = `Join my household on RumahStock!\n\nHousehold Code: ${code}\nApp: ${appUrl}\n\nUse this code to sign in as operator.`;
+  const msgID    = `Bergabung ke rumah saya di RumahStock!\n\nKode Rumah: ${code}\nApp: ${appUrl}\n\nGunakan kode ini untuk masuk sebagai operator.`;
+  const text     = lang==='en' ? msgEN : msgID;
+
+  if(navigator.share){
+    navigator.share({ title: 'RumahStock — '+houseName, text }).catch(()=>{});
+  } else {
+    // Fallback: copy the full share text
+    if(navigator.clipboard){
+      navigator.clipboard.writeText(text).then(()=>{
+        const confirm = document.getElementById('hc-copy-confirm');
+        if(confirm) confirm.textContent = lang==='en' ? '✅ Share text copied!' : '✅ Teks dibagikan tersalin!';
+        setTimeout(()=>{ if(confirm) confirm.textContent=''; }, 2500);
+      });
+    }
+  }
 }
 
 // Navigation between login steps

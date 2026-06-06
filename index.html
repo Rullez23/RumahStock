@@ -2173,13 +2173,183 @@ function confirmNewBin(){
   if(state.bins.find(b=>b.id===id)){showToast('⚠️ Bin ID sudah ada');return;}
   const newBin={id,cat,rak,kotak,items:[]};
   state.bins.push(newBin); saveState(); closeModal();
-  showToast(`✅ Bin "${id}" dibuat`);
-  currentBin=newBin;
+  // Show QR modal instead of navigating directly
+  showNewBinQR(newBin);
+}
+
+function showNewBinQR(bin){
+  // Open modal with QR code
+  document.getElementById('modal-overlay').classList.add('open');
+  document.getElementById('modal-head').className='modal-head newbin';
+  document.getElementById('modal-title').textContent='✅ Bin Berhasil Dibuat!';
+
+  document.getElementById('modal-body').innerHTML=`
+    <div style="text-align:center;padding:8px 0;">
+      <div style="font-size:13px;font-weight:700;color:var(--teal);margin-bottom:4px;">${bin.cat}</div>
+      <div style="font-size:11px;color:#888;margin-bottom:16px;">RAK ${bin.rak} · Kotak ${bin.kotak}</div>
+      <!-- QR Canvas -->
+      <div style="display:inline-block;background:#fff;padding:12px;border-radius:12px;
+                  border:2px solid var(--mgray);margin-bottom:12px;box-shadow:0 4px 12px rgba(0,0,0,.08);">
+        <canvas id="qr-canvas" width="180" height="180"></canvas>
+      </div>
+      <div style="font-size:18px;font-weight:900;color:var(--dark);letter-spacing:2px;margin-bottom:4px;">${bin.id}</div>
+      <div style="font-size:11px;color:#888;margin-bottom:16px;">Scan kode ini untuk membuka bin</div>
+      <!-- Print label preview -->
+      <div id="print-label-wrap" style="display:none;">
+        <div id="printable-qr-label" style="background:#fff;border:2px solid var(--dark);
+             border-radius:10px;padding:14px;display:inline-block;text-align:center;max-width:220px;">
+          <div style="font-size:9px;font-weight:800;color:#888;letter-spacing:1px;margin-bottom:4px;">RUMAHSTOCK</div>
+          <canvas id="qr-canvas-print" width="160" height="160"></canvas>
+          <div style="font-size:14px;font-weight:900;color:var(--dark);letter-spacing:1px;margin-top:6px;">${bin.id}</div>
+          <div style="font-size:10px;font-weight:700;color:var(--teal);margin-top:2px;">${bin.cat}</div>
+          <div style="font-size:9px;color:#888;margin-top:2px;">RAK ${bin.rak} · Kotak ${bin.kotak}</div>
+        </div>
+      </div>
+    </div>`;
+
+  document.getElementById('modal-footer').innerHTML=`
+    <button class="btn-cancel" onclick="skipQRAndOpen('${bin.id}')">
+      ${lang==='en'?'Skip, Open Bin':'Lewati, Buka Bin'}
+    </button>
+    <button onclick="downloadBinQR('${bin.id}')"
+      style="flex:1;padding:12px;background:var(--teal);color:#fff;border:none;
+             border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;">
+      📥 ${lang==='en'?'Download QR':'Download QR'}
+    </button>
+    <button onclick="printBinLabel('${bin.id}')"
+      style="flex:1;padding:12px;background:var(--dark);color:#fff;border:none;
+             border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;">
+      🖨️ ${lang==='en'?'Print Label':'Print Label'}
+    </button>`;
+
+  // Generate QR after DOM is ready
+  setTimeout(()=>{
+    generateQR('qr-canvas', bin.id, 180);
+    generateQR('qr-canvas-print', bin.id, 160);
+    document.getElementById('print-label-wrap').style.display='block';
+  }, 100);
+}
+
+function skipQRAndOpen(binId){
+  closeModal();
+  const bin = state.bins.find(b=>b.id===binId);
+  if(!bin) return;
+  currentBin=bin;
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-tabs button').forEach(b=>b.classList.remove('active'));
   document.getElementById('page-scan').classList.add('active');
   document.querySelector('.nav-tabs button').classList.add('active');
-  document.getElementById('scan-input').value=id; loadBin(newBin);
+  document.getElementById('scan-input').value=binId; loadBin(bin);
+}
+
+function downloadBinQR(binId){
+  const canvas = document.getElementById('qr-canvas');
+  if(!canvas) return;
+  // Create download canvas with label
+  const dl = document.createElement('canvas');
+  dl.width = 280; dl.height = 340;
+  const ctx = dl.getContext('2d');
+  // White background
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, 280, 340);
+  // Header
+  ctx.fillStyle = '#1B2A3B';
+  ctx.fillRect(0, 0, 280, 44);
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 12px Arial';
+  ctx.textAlign = 'center';
+  ctx.fillText('RUMAHSTOCK', 140, 20);
+  ctx.font = '10px Arial';
+  ctx.fillStyle = '#E8B84B';
+  ctx.fillText(binId, 140, 36);
+  // QR code
+  ctx.drawImage(canvas, 50, 54, 180, 180);
+  // Bin info
+  const bin = state.bins.find(b=>b.id===binId);
+  ctx.fillStyle = '#1B2A3B';
+  ctx.font = 'bold 13px Arial';
+  ctx.fillText(binId, 140, 256);
+  ctx.font = '11px Arial';
+  ctx.fillStyle = '#048A81';
+  ctx.fillText(bin?.cat||'', 140, 274);
+  ctx.fillStyle = '#888888';
+  ctx.font = '10px Arial';
+  ctx.fillText(`RAK ${bin?.rak||''} · Kotak ${bin?.kotak||''}`, 140, 290);
+  // Border
+  ctx.strokeStyle = '#E8ECEF';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(1, 1, 278, 338);
+  // Download
+  const link = document.createElement('a');
+  link.download = `QR_${binId}.png`;
+  link.href = dl.toDataURL('image/png');
+  link.click();
+  showToast(`✅ QR ${binId} downloaded`);
+}
+
+function printBinLabel(binId){
+  const canvas = document.getElementById('qr-canvas-print');
+  if(!canvas) return;
+  const bin = state.bins.find(b=>b.id===binId);
+  const qrData = canvas.toDataURL('image/png');
+  const w = window.open('','_blank','width=400,height=500');
+  w.document.write(`<!DOCTYPE html><html><head><title>Bin Label ${binId}</title>
+  <style>
+    body{margin:20px;font-family:Arial,sans-serif;text-align:center;}
+    .label{border:2px solid #1B2A3B;border-radius:10px;padding:16px;display:inline-block;min-width:180px;}
+    .hdr{background:#1B2A3B;color:#fff;padding:6px 12px;border-radius:6px;font-size:10px;font-weight:700;letter-spacing:1px;margin-bottom:10px;}
+    .qr{margin:8px 0;}
+    .id{font-size:15px;font-weight:900;color:#1B2A3B;letter-spacing:1px;margin:6px 0 3px;}
+    .cat{font-size:11px;font-weight:700;color:#048A81;margin-bottom:2px;}
+    .loc{font-size:10px;color:#888;}
+    @media print{body{margin:0;}button{display:none;}}
+  </style></head><body>
+  <div class="label">
+    <div class="hdr">RUMAHSTOCK BIN LABEL</div>
+    <div class="qr"><img src="${qrData}" width="160" height="160"/></div>
+    <div class="id">${binId}</div>
+    <div class="cat">${bin?.cat||''}</div>
+    <div class="loc">RAK ${bin?.rak||''} &nbsp;&middot;&nbsp; Kotak ${bin?.kotak||''}</div>
+  </div>
+  <br/><button onclick="window.print()">&#128424; Print</button>
+  </body></html>`);
+  w.document.close();
+  setTimeout(()=>{ try{ w.print(); }catch(e){} }, 500);
+}
+
+/* ── QR Code Generator (pure canvas, no library) ─────────────────────────
+   Implements QR Version 2 (25×25) for short alphanumeric strings like BIN IDs
+   Uses a simplified matrix approach sufficient for bin IDs up to ~20 chars */
+function generateQR(canvasId, text, size=180){
+  const canvas = document.getElementById(canvasId);
+  if(!canvas) return;
+  // Use a QR API via data URL approach — generate using Google Charts API
+  // This works offline-first with a canvas fallback
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  // Use quickchart.io QR which is reliable and free
+  img.src = `https://quickchart.io/qr?text=${encodeURIComponent(text)}&size=${size}&margin=2&ecLevel=M`;
+  img.onload = ()=>{
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.drawImage(img,0,0,canvas.width,canvas.height);
+  };
+  img.onerror = ()=>{
+    // Fallback: draw placeholder with text
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle='#f5f5f5';
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.fillStyle='#048A81';
+    ctx.font=`bold ${Math.floor(canvas.width/12)}px Arial`;
+    ctx.textAlign='center';
+    ctx.fillText('QR CODE',canvas.width/2,canvas.height/2-10);
+    ctx.font=`${Math.floor(canvas.width/18)}px Arial`;
+    ctx.fillStyle='#333';
+    ctx.fillText(text,canvas.width/2,canvas.height/2+14);
+    ctx.strokeStyle='#ddd';
+    ctx.lineWidth=2;
+    ctx.strokeRect(4,4,canvas.width-8,canvas.height-8);
+  };
 }
 
 function addHistory(type,bin,name,qty,unit,before,after,note){

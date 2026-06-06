@@ -2172,16 +2172,16 @@ function confirmNewBin(){
   if(!cat||!rak||!id){showToast('⚠️ Semua field wajib diisi');return;}
   if(state.bins.find(b=>b.id===id)){showToast('⚠️ Bin ID sudah ada');return;}
   const newBin={id,cat,rak,kotak,items:[]};
-  state.bins.push(newBin); saveState(); closeModal();
-  // Show QR modal instead of navigating directly
+  state.bins.push(newBin); saveState();
+  // Repopulate modal directly (no close/reopen flicker)
   showNewBinQR(newBin);
 }
 
 function showNewBinQR(bin){
-  // Open modal with QR code
-  document.getElementById('modal-overlay').classList.add('open');
-  document.getElementById('modal-head').className='modal-head newbin';
-  document.getElementById('modal-title').textContent='✅ Bin Berhasil Dibuat!';
+  // Update existing open modal directly
+  const head = document.getElementById('modal-head');
+  head.className = 'modal-head newbin';
+  head.textContent = lang==='en' ? '✅ Bin Created!' : '✅ Bin Berhasil Dibuat!';
 
   document.getElementById('modal-body').innerHTML=`
     <div style="text-align:center;padding:8px 0;">

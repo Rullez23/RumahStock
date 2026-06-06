@@ -502,9 +502,9 @@ nav{background:var(--dark);color:#fff;display:flex;align-items:center;
   <button id="add-bin-btn" onclick="openModal('newbin')" class="admin-only"
     style="width:100%;margin-bottom:12px;padding:14px;background:var(--teal);color:#fff;
            border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;">
-    ${t('btnTambahBin')}
+    ➕ Tambah Bin Baru
   </button>
-  <input id="bins-search" class="search-bar" placeholder="🔍 Cari bin atau nama barang…" id="bins-search" oninput="filterBins(this.value)"/>
+  <input id="bins-search" class="search-bar" placeholder="🔍 Cari bin atau nama barang…" oninput="filterBins(this.value)"/>
   <div class="pill-row" id="cat-pills"></div>
   <div id="bins-list"></div>
 </div>
@@ -2223,6 +2223,12 @@ function confirmDeleteBin(){
 ═══════════════════════════════════════════════════ */
 let activeFilter='all';
 function renderBins(filter='',catFilter=activeFilter){
+  // Always update button and search to correct language
+  const addBtn = document.getElementById('add-bin-btn');
+  if(addBtn) addBtn.textContent = t('btnTambahBin');
+  const srchEl = document.getElementById('bins-search');
+  if(srchEl) srchEl.placeholder = t('searchPlaceholder');
+
   const bins = ensureArray(state.bins);
   const cats=[...new Set(bins.map(b=>b.cat))];
   document.getElementById('cat-pills').innerHTML=
@@ -2739,6 +2745,7 @@ let _adjSession  = null;
 function renderReportsPage(){
   if(reportTab==='opname') renderOpnameSessions();
   else renderInvReport();
+
   // Populate category filter
   const sel = document.getElementById('inv-cat-filter');
   if(sel){
@@ -2746,6 +2753,7 @@ function renderReportsPage(){
     sel.innerHTML = `<option value="" id="inv-opt-all-cat">${lang==='en'?'All Categories':'Semua Kategori'}</option>` +
       cats.map(c=>`<option value="${c}">${c}</option>`).join('');
   }
+
   // Populate bin filter
   const binSel = document.getElementById('inv-bin-filter');
   if(binSel){
@@ -2753,6 +2761,26 @@ function renderReportsPage(){
     binSel.innerHTML = `<option value="">${lang==='en'?'All Bins':'Semua Bin'}</option>` +
       bins.map(b=>`<option value="${b.id}">${b.cat} — Rak ${b.rak} Kotak ${b.kotak}</option>`).join('');
   }
+
+  // Apply all labels directly (don't rely on applyLangApp timing)
+  const setTx = (id, val) => { const el=document.getElementById(id); if(el) el.textContent=val; };
+  setTx('rpt-label-periode', lang==='en'?'Select Period':'Pilih Periode');
+  setTx('rpt-label-tampilan', lang==='en'?'View Mode':'Tampilan');
+  setTx('rpt-label-cat', lang==='en'?'Filter Category':'Filter Kategori');
+  setTx('rpt-period-7',  lang==='en'?'7 Days':'7 Hari');
+  setTx('rpt-period-30', lang==='en'?'30 Days':'30 Hari');
+  setTx('rpt-period-90', lang==='en'?'90 Days':'90 Hari');
+  const imb = document.getElementById('inv-mode-item-btn');
+  if(imb) imb.textContent = lang==='en'?'🗂 Per Item':'🗂 Per Barang';
+  const ibb = document.getElementById('inv-mode-bin-btn');
+  if(ibb) ibb.textContent = lang==='en'?'📦 Per Storage Bin':'📦 Per Storage Bin';
+  setTx('opname-report-title',  lang==='en'?'🔢 Stocktake Report':'🔢 Stock Opname Report');
+  const invTitle = document.getElementById('inv-report-main-title');
+  if(invTitle) invTitle.textContent = lang==='en'?'📦 Inventory Movement Report':'📦 Laporan Pergerakan Inventori';
+  const rtabOp  = document.getElementById('rtab-opname');
+  const rtabInv = document.getElementById('rtab-inventory');
+  if(rtabOp)  rtabOp.textContent  = lang==='en'?'🔢 Stocktake Report':'🔢 Opname Report';
+  if(rtabInv) rtabInv.textContent = lang==='en'?'📦 Inventory Report':'📦 Inventory Report';
 }
 
 function setInvMode(mode, btn){
